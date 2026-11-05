@@ -1,0 +1,34 @@
+# Steward
+
+> A compliant customer-service harness for Python, powered by DADR (decision-guided retrieval). It answers from your knowledge base only, follows client rules and approved templates, runs journeys (lead capture, human handover) drawn as graphs of cards, and calls your tools by string id. It stores data in memory, SQLite, MongoDB, Firestore or your own adapter. Distribution `steward-harness`, import `steward`, Apache-2.0.
+
+Key facts:
+- The core is async. Use `Steward.handle()` in sync hosts and `await Steward.ahandle()` in async ones. Create one `Steward` per process.
+- All client-specific behaviour lives in one validated JSON config: profile, templates, rules, policies, slots, validators, tools and journeys. The engine contains no domain words.
+- A tool instance in the config points at an implementation id (`impl`). Register implementations with `@bot.tool("impl.id")`; they receive a `ToolCall` and return `ok(...)` or `fail(...)`.
+- Every reply has a `status` and a `trace` with cost per step. A spend cap is enforced through a ledger.
+- Tests need no network: `steward.testing.FakeProvider`, `memory_stores()`, `tiny_kb()`, `northwind_config()`.
+
+## Docs
+- [README](README.md): overview, install, first integration
+- [AGENTS.md](AGENTS.md): integration checklist for coding agents, common mistakes, recipes
+- [Concepts](docs/concepts.md): the turn pipeline, journeys and cards, expressions, slots, templates, policies, handover
+- [Configuration reference](docs/config-reference.md): every config field (generated)
+- [JSON Schema](schema/steward.schema.json): machine-readable config schema
+- [Tools](docs/tools.md): tool ids, ToolCall, results, receipts, idempotency, mock mode, built-ins
+- [Stores](docs/stores.md): store protocols, adapters, contract tests
+- [Providers](docs/providers.md): OpenRouter, spend cap, EmulatedDecider, FakeProvider, Cassette
+- [Admin server](docs/server.md): FastAPI router, auth and roles, endpoints
+- [Evals](docs/evals.md): scenario files, invariants, calibration, `steward eval`
+- [Build](docs/build.md): building knowledge from markdown, approved knowledge, supersede review
+
+## Examples
+- [minimal.py](examples/minimal.py): config, knowledge, provider, a custom tool (runs offline)
+- [fastapi_app.py](examples/fastapi_app.py): chat endpoint plus the admin page with auth
+- [django_view.py](examples/django_view.py): a sync host
+- [custom_knowledge_store.py](examples/custom_knowledge_store.py): knowledge from your own database
+- [northwind](examples/northwind/northwind.steward.json): a complete config, knowledge base and scenarios
+
+## Optional
+- [Architecture plan](docs/PLAN.md): design decisions and milestones
+- [Changelog](CHANGELOG.md)
