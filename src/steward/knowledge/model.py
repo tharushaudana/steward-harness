@@ -181,6 +181,26 @@ class KnowledgeSnapshot:
         )
 
 
+ITEM_KINDS = ("nodes", "sections", "values", "entities", "calculators", "edges")
+
+
+def snapshot_items(snap: KnowledgeSnapshot) -> list[tuple[str, str, dict[str, Any]]]:
+    """(kind, id, data) per item: how document databases store a knowledge base (one document per item)."""
+    d = snap.to_dict()
+    out: list[tuple[str, str, dict[str, Any]]] = []
+    for kind in ITEM_KINDS:
+        for i, item in enumerate(d[kind]):
+            out.append((kind, str(item.get("id") or f"{kind}-{i}"), item))
+    return out
+
+
+def snapshot_from_items(meta: dict[str, Any], items: list[tuple[str, dict[str, Any]]]) -> KnowledgeSnapshot:
+    d: dict[str, Any] = {"meta": meta, **{k: [] for k in ITEM_KINDS}}
+    for kind, data in items:
+        d[kind].append(data)
+    return KnowledgeSnapshot.from_dict(d)
+
+
 def _mark(m: dict[str, Any]) -> SupersedeMark:
     return SupersedeMark(by=str(m["by"]), lines=tuple(m.get("lines", ())), evidence=tuple(m.get("evidence", ())),
                          rejected=tuple(m.get("rejected", ())), full=bool(m.get("full", False)),

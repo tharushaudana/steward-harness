@@ -172,6 +172,55 @@ class LedgerStoreContract:
         assert s.calls == 2 and abs(s.by_purpose["answer"] - 0.002) < 1e-9 and set(s.by_model) == {"m-a", "m-b"}
 
 
+class KnowledgeStoreContract:
+    """For stores that are also KnowledgeWriters (and optionally SearchableStore)."""
+
+    @pytest.fixture
+    def store(self) -> Any:  # pragma: no cover
+        raise NotImplementedError("override the `store` fixture (an empty knowledge store)")
+
+    async def test_snapshot_round_trip(self, store: Any) -> None:
+        from steward.testing.fixtures import tiny_kb
+
+        snap = tiny_kb()
+        await store.write_snapshot(snap)
+        assert await store.version() == snap.meta.version
+        assert await store.load() == snap
+
+    async def test_replace_and_update_marks(self, store: Any) -> None:
+        from dataclasses import replace
+
+        from steward.knowledge.model import SupersedeMark
+        from steward.testing.fixtures import tiny_kb
+
+        await store.write_snapshot(tiny_kb())
+        smaller = replace(tiny_kb("v2"), sections=tiny_kb().sections[:3])
+        await store.write_snapshot(smaller)  # a full replacement, not a merge
+        assert len((await store.load()).sections) == 3
+        await store.update_marks("S2", (SupersedeMark("S1", ("Frame sizes: M, L. Weight: 15.8 kg. 7 gears.",)),), "v3")
+        snap = await store.load()
+        assert snap.meta.version == "v3" and await store.version() == "v3"
+        assert next(s for s in snap.sections if s.id == "S2").marks[0].by == "S1"
+
+    async def test_overrides(self, store: Any) -> None:
+        from steward.knowledge.model import SupersedeOverride
+
+        await store.put_override(SupersedeOverride("S4", "line a", "reject"))
+        await store.put_override(SupersedeOverride("S4", "line b", "add", "S9"))
+        assert {(o.line, o.action) for o in await store.list_overrides()} == {("line a", "reject"), ("line b", "add")}
+        await store.delete_override("S4", "line a")
+        assert [o.line for o in await store.list_overrides()] == ["line b"]
+
+    async def test_search_if_supported(self, store: Any) -> None:
+        from steward.testing.fixtures import tiny_kb
+
+        if not hasattr(store, "search"):
+            pytest.skip("store has no search; the engine uses its built-in BM25")
+        await store.write_snapshot(tiny_kb())
+        hits = await store.search("warranty frames", "section", 3)
+        assert hits and hits[0].id == "S7"
+
+
 class PlanCacheContract:
     @pytest.fixture
     def store(self) -> Any:  # pragma: no cover
