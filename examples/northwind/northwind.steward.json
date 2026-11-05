@@ -1,0 +1,188 @@
+{
+ "$schema": "../../schema/steward.schema.json",
+ "schema_version": 2,
+ "version": 1,
+ "profile": {
+  "name": "Northwind Bikes Assistant",
+  "identity": "The assistant of Northwind Bikes, a fictional bicycle shop with a workshop and online store.",
+  "purpose": "Help customers choose bikes and accessories, answer questions about prices, sizes and the workshop, and connect them with the team.",
+  "tone": "Friendly, concise and professional. Reply in the customer's language. No emojis.",
+  "goals": "Answer exactly what was asked. Invite buyers to a free test ride at the shop.",
+  "escalation": "Sales: +1 555 0100. Workshop: +1 555 0101. Email: hello@northwind.example",
+  "greeting": {"en": "Hi! Welcome to Northwind Bikes. How can I help you today?", "es": "¡Hola! Bienvenido a Northwind Bikes. ¿En qué puedo ayudarte?"}
+ },
+ "prompts": {
+  "answer_extra": "When a customer asks about a bike, give the model name, frame sizes, weight and price if the sources list them."
+ },
+ "settings": {
+  "languages": ["en", "es"],
+  "contact_slot": "phone",
+  "ask_timeout_turns": 3,
+  "max_asks": 2,
+  "max_reasks": 2,
+  "paused_template": "holding",
+  "agents_default_online": false
+ },
+ "contacts": {
+  "sales": {"phone": "+1 555 0100"},
+  "workshop": {"phone": "+1 555 0101"},
+  "email": "hello@northwind.example",
+  "team_lead": {"name": "the customer team"}
+ },
+ "validators": {
+  "phone": {
+   "normalize": ["unicode_digits", "strip_non_digits", {"country_code": {"code": "1", "trunk": ""}}],
+   "pattern": "^[2-9][0-9]{9}$"
+  }
+ },
+ "slots": {
+  "name": {"type": "string", "description": "The customer's own name", "pii": true},
+  "phone": {"type": "phone", "validator": "phone", "description": "The customer's own phone number", "pii": true},
+  "category": {
+   "type": "enum",
+   "description": "Lead category (see the options' meanings)",
+   "values": ["Bike Purchase", "Prices and Sizes", "Workshop and Repairs", "Accessories", "Business and Fleet", "Other"],
+   "value_descriptions": {
+    "Bike Purchase": "wants to buy one bike for themselves or their family",
+    "Prices and Sizes": "only asks prices, sizes or comparisons, with no stated intent to buy yet",
+    "Workshop and Repairs": "servicing, repairs or a workshop appointment",
+    "Accessories": "helmets, locks, lights, clothing or parts",
+    "Business and Fleet": "buying several bikes (more than one), or for a company, school or rental business",
+    "Other": "anything else"
+   }
+  },
+  "interest": {"type": "string", "description": "Every product or service the customer showed interest in, most recent last, with quantities (e.g. 'Trail 500; City Cruiser x3')"},
+  "requirement": {"type": "string", "description": "The customer's CURRENT requirement in one sentence, from their latest request"}
+ },
+ "templates": {
+  "welcome": {"text": {"en": "Hi! Welcome to Northwind Bikes.", "es": "¡Hola! Bienvenido a Northwind Bikes."}},
+  "ask_phone": {"text": {"en": "Would you like a call from our team? Share your phone number and we will get in touch.", "es": "¿Quieres que te llamemos? Comparte tu número de teléfono y nos pondremos en contacto."}},
+  "ask_name_phone": {"text": {"en": "So that the right person can help you, may I have your name and phone number?", "es": "Para que la persona adecuada pueda ayudarte, ¿me das tu nombre y número de teléfono?"}},
+  "thank_you": {"text": {"en": "Thank you{{slots.name|prefix:', '}}! Our team will contact you soon.", "es": "¡Gracias{{slots.name|prefix:', '}}! Nuestro equipo te contactará pronto."}, "requires_receipt": "save_lead"},
+  "invalid_phone": {"text": {"en": "The number {{vars.invalid.phone}} does not look like a valid phone number. Please share a 10-digit number, e.g. 555 010 0199.", "es": "El número {{vars.invalid.phone}} no parece válido. Por favor comparte un número de 10 dígitos, p. ej. 555 010 0199."}, "counts_as_ask": "phone"},
+  "contact_team": {"text": {"en": "You can also reach us directly. Sales: +1 555 0100. Workshop: +1 555 0101.", "es": "También puedes contactarnos directamente. Ventas: +1 555 0100. Taller: +1 555 0101."}, "covers": ["ask_phone", "ask_name_phone"]},
+  "agent_unavailable": {"text": {"en": "Thank you{{slots.name|prefix:', '}}. Nobody from the team is available to chat right now, but we have your number {{slots.phone}} and will call you back.", "es": "Gracias{{slots.name|prefix:', '}}. Ahora mismo no hay nadie disponible para chatear, pero tenemos tu número {{slots.phone}} y te llamaremos."}, "requires_receipt": "save_lead", "covers": ["thank_you", "ask_phone", "ask_name_phone"]},
+  "handover_confirmed": {"text": {"en": "Thank you{{slots.name|prefix:', '}}. I am connecting you with a member of our team now.", "es": "Gracias{{slots.name|prefix:', '}}. Te estoy conectando con un miembro de nuestro equipo."}, "requires_receipt": "create_handover", "covers": ["thank_you", "ask_phone", "ask_name_phone"]},
+  "holding": {"text": {"en": "Thanks for your message. A member of our team will reply to you here shortly.", "es": "Gracias por tu mensaje. Un miembro de nuestro equipo te responderá aquí en breve."}, "requires_receipt": "create_handover", "covers": ["thank_you", "ask_phone", "ask_name_phone", "welcome"]},
+  "apology": {"text": {"en": "We are sorry for the trouble, and we want to make it right.", "es": "Lamentamos las molestias y queremos solucionarlo."}},
+  "careers": {"text": {"en": "Thanks for your interest in working with us! Please send your CV to jobs@northwind.example.", "es": "¡Gracias por tu interés en trabajar con nosotros! Envía tu CV a jobs@northwind.example."}},
+  "decline_topic": {"text": {"en": "I can only help with Northwind Bikes products, the workshop and orders.", "es": "Solo puedo ayudarte con productos de Northwind Bikes, el taller y pedidos."}, "covers": ["ask_phone", "ask_name_phone"]},
+  "workshop": {"text": {"en": "Our workshop services and repairs bikes of every brand. Book a slot: +1 555 0101.", "es": "Nuestro taller repara bicicletas de todas las marcas. Reserva una cita: +1 555 0101."}},
+  "comment_reply": {"text": {"en": "Thanks for your comment! We have sent you a private message with the details.", "es": "¡Gracias por tu comentario! Te hemos enviado un mensaje privado con los detalles."}}
+ },
+ "rules": {
+  "voice": ["Friendly and concise.", "Reply in the language the customer uses.", "Never use emojis.", "Never guess; if the sources do not say it, offer to connect the customer with the team."],
+  "no_emoji": true,
+  "required_wording": [
+   {"id": "test_ride", "instruction": "When recommending a bike, mention the free test ride at the shop.", "when_regex": "\\brecommend", "check": {"en": "test ride", "es": "prueba"}, "insert": {"en": "You are welcome to a free test ride at the shop.", "es": "Te invitamos a una prueba gratuita en la tienda."}}
+  ],
+  "forbidden_phrases": [{"phrase": "cheap", "replace": "great value"}],
+  "claims_without_receipt": {"phrases": ["forwarded", "will call you", "has been notified", "noted your number", "connecting you"], "receipt_tools": ["create_handover", "save_lead"]}
+ },
+ "channels": {
+  "dm": {"mode": "full"},
+  "comment": {"mode": "template_only", "template": "comment_reply"}
+ },
+ "flow": {
+  "welcome": {"template": "welcome", "channel": "dm"},
+  "ask_contact": {"template": "ask_phone", "template_when_unanswered": "ask_name_phone"},
+  "thank_you": {"template": "thank_you"}
+ },
+ "policies": [
+  {"id": "careers", "scope": "turn", "priority": 30, "threshold": 0.65,
+   "trigger": {"type": "noul", "instructions": "Is the customer asking about jobs or working at Northwind Bikes?", "criteria": {"true": "Asks about jobs, vacancies or where to send a CV.", "false": "Anything else."}},
+   "action": {"type": "template", "template": "careers", "exclusive": true, "no_ask": true}},
+  {"id": "off_topic", "scope": "turn", "priority": 40, "threshold": 0.7,
+   "trigger": {"type": "noul", "instructions": "Is the message mainly about something unrelated to bicycles, accessories, the workshop or orders?", "criteria": {"true": "Politics, unrelated products or services.", "false": "Bikes of any kind, accessories, repairs, orders, the shop, or a greeting."}},
+   "action": {"type": "template", "template": "decline_topic", "exclusive": true, "no_ask": true}},
+  {"id": "workshop", "scope": "part", "priority": 5, "threshold": 0.6,
+   "trigger": {"type": "noul", "instructions": "Does this part ask about repairs, servicing or the workshop?", "criteria": {"true": "Repairs, servicing, tune-ups, workshop bookings.", "false": "Anything else."}},
+   "action": {"type": "template", "template": "workshop", "position": "body"}}
+ ],
+ "tools": {
+  "save_lead": {"impl": "records.append", "args": {"table": "lead", "record": {"name": "{{slots.name}}", "phone": "{{slots.phone}}", "category": "{{slots.category}}", "interest": "{{slots.interest}}", "requirement": "{{slots.requirement}}", "channel": "{{turn.channel}}"}}, "idempotency_key": "lead:{{slots.phone}}:{{turn.date}}"},
+  "is_agent_available": {"impl": "agents.available", "side_effect": false, "timeout_ms": 1500},
+  "create_handover": {"impl": "records.append", "args": {"table": "handover", "record": {"reason": "{{vars.reason}}", "name": "{{slots.name}}", "phone": "{{slots.phone}}", "message": "{{turn.message}}"}}, "idempotency_key": "handover:{{turn.session}}:{{state.handover_epoch}}"}
+ },
+ "journeys": [
+  {"id": "immediate_handover", "title": "Immediate handover (complaints, legal, safety)",
+   "nodes": [
+    {"id": "t", "type": "trigger", "scope": "turn", "mode": "exclusive", "takeover": "turn", "priority": 100, "threshold": 0.65,
+     "decision": {"type": "choice", "instructions": "Which of these situations applies to the customer's LATEST message?",
+      "criteria": {"complaint": "The customer is angry or complains about a product, an order or the service.", "legal": "The customer threatens legal action.", "safety": "The customer reports an accident or a safety failure of a product.", "none": "None of the above."}}, "ui": {"x": 0, "y": 0}},
+    {"id": "s", "type": "set", "assign": {"vars.reason": "trigger.choice"}, "ui": {"x": 220, "y": 0}},
+    {"id": "c", "type": "condition", "expr": "trigger.choice == 'complaint'", "ui": {"x": 440, "y": 0}},
+    {"id": "ap", "type": "emit", "template": "apology", "position": "before", "ui": {"x": 660, "y": -80}},
+    {"id": "h", "type": "tool", "tool": "create_handover", "ui": {"x": 880, "y": 0}},
+    {"id": "hold", "type": "emit", "template": "holding", "position": "replace", "ui": {"x": 1100, "y": -80}},
+    {"id": "p", "type": "set", "assign": {"state.handover_active": "True"}, "ui": {"x": 1320, "y": -80}},
+    {"id": "x", "type": "end", "status": "handover", "ui": {"x": 1540, "y": -80}},
+    {"id": "fb", "type": "emit", "template": "contact_team", "position": "replace", "ui": {"x": 1100, "y": 80}},
+    {"id": "x2", "type": "end", "status": "error", "ui": {"x": 1320, "y": 80}}
+   ],
+   "edges": [
+    {"from": "t.complaint", "to": "s"}, {"from": "t.legal", "to": "s"}, {"from": "t.safety", "to": "s"},
+    {"from": "s.next", "to": "c"}, {"from": "c.true", "to": "ap"}, {"from": "c.false", "to": "h"}, {"from": "ap.next", "to": "h"},
+    {"from": "h.ok", "to": "hold"}, {"from": "h.error", "to": "fb"}, {"from": "h.timeout", "to": "fb"},
+    {"from": "hold.next", "to": "p"}, {"from": "p.next", "to": "x"}, {"from": "fb.next", "to": "x2"}
+   ]},
+  {"id": "human_request", "title": "Customer asks for a human",
+   "nodes": [
+    {"id": "t", "type": "trigger", "scope": "part", "mode": "exclusive", "priority": 50, "threshold": 0.65,
+     "decision": {"type": "noul", "instructions": "Does this part of the message ask to talk with a person from the team now?", "criteria": {"true": "Asks to be connected to, called by, or to chat with a person.", "false": "Asks whether humans read this chat, or only asks for a phone number to call."}}, "ui": {"x": 0, "y": 300}},
+    {"id": "have", "type": "condition", "expr": "has(slots.name) and valid(slots.phone, 'phone')", "ui": {"x": 220, "y": 300}},
+    {"id": "ex", "type": "extract", "slots": ["name", "phone"], "require": ["name", "phone"], "source": "conversation", "instructions": "Only the customer's OWN name and phone number.", "ui": {"x": 440, "y": 420}},
+    {"id": "have2", "type": "condition", "expr": "has(slots.name) and valid(slots.phone, 'phone')", "ui": {"x": 660, "y": 420}},
+    {"id": "refused", "type": "condition", "expr": "state.contact_refused == True", "ui": {"x": 880, "y": 520}},
+    {"id": "ask", "type": "ask", "require": ["name", "phone"], "template": "ask_name_phone", "ui": {"x": 1100, "y": 600}},
+    {"id": "inv", "type": "emit", "template": "invalid_phone", "position": "body", "ui": {"x": 660, "y": 640}},
+    {"id": "wait", "type": "ask", "require": ["name", "phone"], "ui": {"x": 880, "y": 740}},
+    {"id": "team", "type": "emit", "template": "contact_team", "position": "body", "ui": {"x": 1320, "y": 520}},
+    {"id": "x3", "type": "end", "status": "abandoned", "ui": {"x": 1540, "y": 520}},
+    {"id": "lex", "type": "extract", "slots": ["category", "interest", "requirement"], "source": "conversation", "instructions": "The lead details as of NOW, with quantities.", "ui": {"x": 660, "y": 200}},
+    {"id": "avail", "type": "tool", "tool": "is_agent_available", "save_as": "vars.agents", "ui": {"x": 880, "y": 300}},
+    {"id": "isav", "type": "condition", "expr": "vars.agents.available == True", "ui": {"x": 1100, "y": 300}},
+    {"id": "lead", "type": "tool", "tool": "save_lead", "ui": {"x": 1320, "y": 380}},
+    {"id": "na", "type": "emit", "template": "agent_unavailable", "position": "body", "ui": {"x": 1540, "y": 380}},
+    {"id": "x2", "type": "end", "status": "done", "ui": {"x": 1760, "y": 380}},
+    {"id": "rs", "type": "set", "assign": {"vars.reason": "'customer_request'"}, "ui": {"x": 1320, "y": 220}},
+    {"id": "ho", "type": "tool", "tool": "create_handover", "ui": {"x": 1540, "y": 220}},
+    {"id": "ok", "type": "emit", "template": "handover_confirmed", "position": "body", "ui": {"x": 1760, "y": 220}},
+    {"id": "p", "type": "set", "assign": {"state.handover_active": "True"}, "ui": {"x": 1980, "y": 220}},
+    {"id": "x", "type": "end", "status": "handover", "ui": {"x": 2200, "y": 220}}
+   ],
+   "edges": [
+    {"from": "t.next", "to": "have"}, {"from": "have.true", "to": "lex"}, {"from": "have.false", "to": "ex"},
+    {"from": "ex.ok", "to": "have2"}, {"from": "ex.partial", "to": "have2"}, {"from": "ex.invalid", "to": "inv"}, {"from": "ex.error", "to": "ask"},
+    {"from": "have2.true", "to": "lex"}, {"from": "have2.false", "to": "refused"},
+    {"from": "refused.true", "to": "team"}, {"from": "refused.false", "to": "ask"},
+    {"from": "ask.resume", "to": "ex"}, {"from": "ask.gave_up", "to": "team"},
+    {"from": "inv.next", "to": "wait"}, {"from": "wait.resume", "to": "ex"}, {"from": "wait.gave_up", "to": "team"},
+    {"from": "team.next", "to": "x3"},
+    {"from": "lex.ok", "to": "avail"}, {"from": "lex.partial", "to": "avail"}, {"from": "lex.invalid", "to": "avail"}, {"from": "lex.error", "to": "avail"},
+    {"from": "avail.ok", "to": "isav"}, {"from": "avail.error", "to": "lead"}, {"from": "avail.timeout", "to": "lead"},
+    {"from": "isav.true", "to": "rs"}, {"from": "isav.false", "to": "lead"},
+    {"from": "lead.ok", "to": "na"}, {"from": "lead.error", "to": "na"}, {"from": "lead.timeout", "to": "na"}, {"from": "na.next", "to": "x2"},
+    {"from": "rs.next", "to": "ho"}, {"from": "ho.ok", "to": "ok"}, {"from": "ho.error", "to": "lead"}, {"from": "ho.timeout", "to": "lead"},
+    {"from": "ok.next", "to": "p"}, {"from": "p.next", "to": "x"}
+   ]},
+  {"id": "lead_capture", "title": "Lead capture (runs alongside the knowledge answer)",
+   "nodes": [
+    {"id": "t", "type": "trigger", "scope": "turn", "mode": "tap", "priority": 10, "threshold": 0.5, "when": "has(turn.number_in_message)",
+     "decision": {"type": "noul", "instructions": "In the LATEST message, does the customer share their OWN contact details (a phone number, possibly with their name)?", "criteria": {"true": "Gives their own number, possibly as a reply to a request for it.", "false": "Quotes a shop number, or mentions someone else's number, an order number or a price."}}, "ui": {"x": 0, "y": 900}},
+    {"id": "ex", "type": "extract", "source": "conversation", "slots": ["name", "phone", "category", "interest", "requirement"], "require": ["phone"], "instructions": "From the WHOLE conversation: the customer's own name and phone, the lead category, interests and current requirement.", "ui": {"x": 220, "y": 900}},
+    {"id": "c", "type": "condition", "expr": "valid(slots.phone, 'phone') and state.lead_saved_phone != slots.phone", "ui": {"x": 440, "y": 900}},
+    {"id": "save", "type": "tool", "tool": "save_lead", "ui": {"x": 660, "y": 860}},
+    {"id": "mark", "type": "set", "assign": {"state.lead_saved_phone": "slots.phone"}, "ui": {"x": 880, "y": 860}},
+    {"id": "ty", "type": "emit", "template": "thank_you", "position": "suffix", "ui": {"x": 1100, "y": 860}},
+    {"id": "inv", "type": "emit", "template": "invalid_phone", "position": "suffix", "ui": {"x": 440, "y": 1020}},
+    {"id": "x", "type": "end", "status": "done", "ui": {"x": 1320, "y": 900}}
+   ],
+   "edges": [
+    {"from": "t.next", "to": "ex"}, {"from": "ex.ok", "to": "c"}, {"from": "ex.partial", "to": "c"}, {"from": "ex.invalid", "to": "inv"}, {"from": "ex.error", "to": "x"},
+    {"from": "c.true", "to": "save"}, {"from": "c.false", "to": "x"},
+    {"from": "save.ok", "to": "mark"}, {"from": "save.error", "to": "x"}, {"from": "save.timeout", "to": "x"},
+    {"from": "mark.next", "to": "ty"}, {"from": "ty.next", "to": "x"}, {"from": "inv.next", "to": "x"}
+   ]}
+ ]
+}
