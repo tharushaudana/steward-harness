@@ -1,0 +1,1585 @@
+{
+ "$defs": {
+  "AskContactStep": {
+   "additionalProperties": false,
+   "properties": {
+    "template": {
+     "title": "Template",
+     "type": "string"
+    },
+    "template_when_unanswered": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "description": "Used when the question could not be answered.",
+     "title": "Template When Unanswered"
+    }
+   },
+   "required": [
+    "template"
+   ],
+   "title": "AskContactStep",
+   "type": "object"
+  },
+  "AskNode": {
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "ui": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/UI"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null
+    },
+    "note": {
+     "default": "",
+     "title": "Note",
+     "type": "string"
+    },
+    "type": {
+     "const": "ask",
+     "default": "ask",
+     "title": "Type",
+     "type": "string"
+    },
+    "require": {
+     "items": {
+      "type": "string"
+     },
+     "title": "Require",
+     "type": "array"
+    },
+    "template": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "description": "Optional: empty when an Output card just asked.",
+     "title": "Template"
+    }
+   },
+   "required": [
+    "id"
+   ],
+   "title": "AskNode",
+   "type": "object"
+  },
+  "ChangelogEntry": {
+   "additionalProperties": false,
+   "properties": {
+    "ts": {
+     "default": "",
+     "title": "Ts",
+     "type": "string"
+    },
+    "version": {
+     "default": 0,
+     "title": "Version",
+     "type": "integer"
+    },
+    "note": {
+     "default": "",
+     "title": "Note",
+     "type": "string"
+    }
+   },
+   "title": "ChangelogEntry",
+   "type": "object"
+  },
+  "Channel": {
+   "additionalProperties": false,
+   "properties": {
+    "mode": {
+     "default": "full",
+     "enum": [
+      "full",
+      "template_only"
+     ],
+     "title": "Mode",
+     "type": "string"
+    },
+    "template": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "description": "For template_only channels: the only reply sent.",
+     "title": "Template"
+    }
+   },
+   "title": "Channel",
+   "type": "object"
+  },
+  "ClaimsRule": {
+   "additionalProperties": false,
+   "properties": {
+    "phrases": {
+     "items": {
+      "type": "string"
+     },
+     "title": "Phrases",
+     "type": "array"
+    },
+    "receipt_tools": {
+     "items": {
+      "type": "string"
+     },
+     "title": "Receipt Tools",
+     "type": "array"
+    }
+   },
+   "title": "ClaimsRule",
+   "type": "object"
+  },
+  "ConditionNode": {
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "ui": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/UI"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null
+    },
+    "note": {
+     "default": "",
+     "title": "Note",
+     "type": "string"
+    },
+    "type": {
+     "const": "condition",
+     "default": "condition",
+     "title": "Type",
+     "type": "string"
+    },
+    "expr": {
+     "title": "Expr",
+     "type": "string"
+    }
+   },
+   "required": [
+    "id",
+    "expr"
+   ],
+   "title": "ConditionNode",
+   "type": "object"
+  },
+  "CustomNode": {
+   "additionalProperties": true,
+   "description": "A card type registered by the host (steward.harness.cards). Its fields are validated by that card.",
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "ui": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/UI"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null
+    },
+    "note": {
+     "default": "",
+     "title": "Note",
+     "type": "string"
+    },
+    "type": {
+     "title": "Type",
+     "type": "string"
+    }
+   },
+   "required": [
+    "id",
+    "type"
+   ],
+   "title": "CustomNode",
+   "type": "object"
+  },
+  "DecisionNode": {
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "ui": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/UI"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null
+    },
+    "note": {
+     "default": "",
+     "title": "Note",
+     "type": "string"
+    },
+    "type": {
+     "const": "decision",
+     "default": "decision",
+     "title": "Type",
+     "type": "string"
+    },
+    "decision": {
+     "$ref": "#/$defs/DecisionQuestion"
+    },
+    "threshold": {
+     "default": 0.5,
+     "title": "Threshold",
+     "type": "number"
+    }
+   },
+   "required": [
+    "id",
+    "decision"
+   ],
+   "title": "DecisionNode",
+   "type": "object"
+  },
+  "DecisionQuestion": {
+   "additionalProperties": false,
+   "description": "A bounded question answered by the decision model. noul: yes/no probability; choice: one of `criteria`'s keys.",
+   "properties": {
+    "type": {
+     "default": "noul",
+     "enum": [
+      "noul",
+      "choice",
+      "score"
+     ],
+     "title": "Type",
+     "type": "string"
+    },
+    "instructions": {
+     "description": "The question, phrased about the customer's message.",
+     "title": "Instructions",
+     "type": "string"
+    },
+    "criteria": {
+     "additionalProperties": {
+      "type": "string"
+     },
+     "description": "noul: {'true': ..., 'false': ...} descriptions. choice: {option: description}; 'none' = no port.",
+     "title": "Criteria",
+     "type": "object"
+    }
+   },
+   "required": [
+    "instructions"
+   ],
+   "title": "DecisionQuestion",
+   "type": "object"
+  },
+  "Edge": {
+   "additionalProperties": false,
+   "properties": {
+    "from": {
+     "description": "'<node id>.<port>'",
+     "title": "From",
+     "type": "string"
+    },
+    "to": {
+     "title": "To",
+     "type": "string"
+    }
+   },
+   "required": [
+    "from",
+    "to"
+   ],
+   "title": "Edge",
+   "type": "object"
+  },
+  "EmitNode": {
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "ui": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/UI"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null
+    },
+    "note": {
+     "default": "",
+     "title": "Note",
+     "type": "string"
+    },
+    "type": {
+     "const": "emit",
+     "default": "emit",
+     "title": "Type",
+     "type": "string"
+    },
+    "template": {
+     "title": "Template",
+     "type": "string"
+    },
+    "position": {
+     "default": "body",
+     "enum": [
+      "before",
+      "body",
+      "replace",
+      "suffix"
+     ],
+     "title": "Position",
+     "type": "string"
+    }
+   },
+   "required": [
+    "id",
+    "template"
+   ],
+   "title": "EmitNode",
+   "type": "object"
+  },
+  "EndNode": {
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "ui": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/UI"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null
+    },
+    "note": {
+     "default": "",
+     "title": "Note",
+     "type": "string"
+    },
+    "type": {
+     "const": "end",
+     "default": "end",
+     "title": "Type",
+     "type": "string"
+    },
+    "status": {
+     "default": "done",
+     "enum": [
+      "done",
+      "handover",
+      "abandoned",
+      "error"
+     ],
+     "title": "Status",
+     "type": "string"
+    }
+   },
+   "required": [
+    "id"
+   ],
+   "title": "EndNode",
+   "type": "object"
+  },
+  "ExtractNode": {
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "ui": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/UI"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null
+    },
+    "note": {
+     "default": "",
+     "title": "Note",
+     "type": "string"
+    },
+    "type": {
+     "const": "extract",
+     "default": "extract",
+     "title": "Type",
+     "type": "string"
+    },
+    "slots": {
+     "items": {
+      "type": "string"
+     },
+     "title": "Slots",
+     "type": "array"
+    },
+    "require": {
+     "items": {
+      "type": "string"
+     },
+     "title": "Require",
+     "type": "array"
+    },
+    "source": {
+     "default": "conversation",
+     "enum": [
+      "conversation",
+      "message"
+     ],
+     "title": "Source",
+     "type": "string"
+    },
+    "instructions": {
+     "default": "",
+     "title": "Instructions",
+     "type": "string"
+    }
+   },
+   "required": [
+    "id",
+    "slots"
+   ],
+   "title": "ExtractNode",
+   "type": "object"
+  },
+  "Flow": {
+   "additionalProperties": false,
+   "properties": {
+    "welcome": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/FlowStep"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null
+    },
+    "ask_contact": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/AskContactStep"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null
+    },
+    "thank_you": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/FlowStep"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null
+    }
+   },
+   "title": "Flow",
+   "type": "object"
+  },
+  "FlowStep": {
+   "additionalProperties": false,
+   "properties": {
+    "template": {
+     "title": "Template",
+     "type": "string"
+    },
+    "channel": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Channel"
+    }
+   },
+   "required": [
+    "template"
+   ],
+   "title": "FlowStep",
+   "type": "object"
+  },
+  "ForbiddenPhrase": {
+   "additionalProperties": false,
+   "properties": {
+    "phrase": {
+     "title": "Phrase",
+     "type": "string"
+    },
+    "replace": {
+     "default": "",
+     "title": "Replace",
+     "type": "string"
+    }
+   },
+   "required": [
+    "phrase"
+   ],
+   "title": "ForbiddenPhrase",
+   "type": "object"
+  },
+  "Journey": {
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "title": {
+     "default": "",
+     "title": "Title",
+     "type": "string"
+    },
+    "enabled": {
+     "default": true,
+     "title": "Enabled",
+     "type": "boolean"
+    },
+    "nodes": {
+     "items": {
+      "oneOf": [
+       {
+        "$ref": "#/$defs/TriggerNode"
+       },
+       {
+        "$ref": "#/$defs/ConditionNode"
+       },
+       {
+        "$ref": "#/$defs/DecisionNode"
+       },
+       {
+        "$ref": "#/$defs/ExtractNode"
+       },
+       {
+        "$ref": "#/$defs/ToolNode"
+       },
+       {
+        "$ref": "#/$defs/AskNode"
+       },
+       {
+        "$ref": "#/$defs/SetNode"
+       },
+       {
+        "$ref": "#/$defs/EmitNode"
+       },
+       {
+        "$ref": "#/$defs/EndNode"
+       },
+       {
+        "$ref": "#/$defs/CustomNode"
+       }
+      ]
+     },
+     "title": "Nodes",
+     "type": "array"
+    },
+    "edges": {
+     "items": {
+      "$ref": "#/$defs/Edge"
+     },
+     "title": "Edges",
+     "type": "array"
+    }
+   },
+   "required": [
+    "id",
+    "nodes"
+   ],
+   "title": "Journey",
+   "type": "object"
+  },
+  "Policy": {
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "enabled": {
+     "default": true,
+     "title": "Enabled",
+     "type": "boolean"
+    },
+    "scope": {
+     "default": "part",
+     "enum": [
+      "turn",
+      "part"
+     ],
+     "title": "Scope",
+     "type": "string"
+    },
+    "priority": {
+     "default": 0,
+     "title": "Priority",
+     "type": "integer"
+    },
+    "threshold": {
+     "default": 0.65,
+     "title": "Threshold",
+     "type": "number"
+    },
+    "when": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "description": "Optional code expression; the policy is only asked when it is true.",
+     "title": "When"
+    },
+    "trigger": {
+     "$ref": "#/$defs/DecisionQuestion"
+    },
+    "action": {
+     "$ref": "#/$defs/PolicyAction"
+    }
+   },
+   "required": [
+    "id",
+    "trigger"
+   ],
+   "title": "Policy",
+   "type": "object"
+  },
+  "PolicyAction": {
+   "additionalProperties": false,
+   "properties": {
+    "type": {
+     "default": "template",
+     "enum": [
+      "template",
+      "inject"
+     ],
+     "title": "Type",
+     "type": "string"
+    },
+    "template": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Template"
+    },
+    "text": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "description": "For inject: the instruction added to the answer prompt.",
+     "title": "Text"
+    },
+    "position": {
+     "default": "body",
+     "enum": [
+      "before",
+      "body",
+      "suffix"
+     ],
+     "title": "Position",
+     "type": "string"
+    },
+    "exclusive": {
+     "default": false,
+     "description": "Only this template; no knowledge answer.",
+     "title": "Exclusive",
+     "type": "boolean"
+    },
+    "suppress_kb": {
+     "default": false,
+     "description": "No knowledge answer for the part this policy matched.",
+     "title": "Suppress Kb",
+     "type": "boolean"
+    },
+    "no_ask": {
+     "default": false,
+     "description": "Do not ask for the contact after this template.",
+     "title": "No Ask",
+     "type": "boolean"
+    }
+   },
+   "title": "PolicyAction",
+   "type": "object"
+  },
+  "Profile": {
+   "additionalProperties": false,
+   "properties": {
+    "name": {
+     "default": "Assistant",
+     "title": "Name",
+     "type": "string"
+    },
+    "identity": {
+     "default": "",
+     "title": "Identity",
+     "type": "string"
+    },
+    "purpose": {
+     "default": "",
+     "title": "Purpose",
+     "type": "string"
+    },
+    "tone": {
+     "default": "",
+     "title": "Tone",
+     "type": "string"
+    },
+    "goals": {
+     "default": "",
+     "title": "Goals",
+     "type": "string"
+    },
+    "escalation": {
+     "default": "",
+     "description": "What to tell customers when the assistant cannot help (contacts).",
+     "title": "Escalation",
+     "type": "string"
+    },
+    "greeting": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "additionalProperties": {
+        "type": "string"
+       },
+       "type": "object"
+      }
+     ],
+     "default": "Hello! How can I help you today?",
+     "title": "Greeting"
+    }
+   },
+   "title": "Profile",
+   "type": "object"
+  },
+  "Prompts": {
+   "additionalProperties": false,
+   "properties": {
+    "answer_extra": {
+     "default": "",
+     "description": "Extra instructions added to the client-rules block of the answer prompt.",
+     "title": "Answer Extra",
+     "type": "string"
+    }
+   },
+   "title": "Prompts",
+   "type": "object"
+  },
+  "RequiredWording": {
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "instruction": {
+     "default": "",
+     "title": "Instruction",
+     "type": "string"
+    },
+    "when_regex": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "When Regex"
+    },
+    "when_mentions_entity_types": {
+     "items": {
+      "type": "string"
+     },
+     "title": "When Mentions Entity Types",
+     "type": "array"
+    },
+    "check": {
+     "additionalProperties": {
+      "type": "string"
+     },
+     "description": "Regex per language that must match the reply.",
+     "title": "Check",
+     "type": "object"
+    },
+    "insert": {
+     "additionalProperties": {
+      "type": "string"
+     },
+     "description": "Text inserted when the check still fails.",
+     "title": "Insert",
+     "type": "object"
+    }
+   },
+   "required": [
+    "id"
+   ],
+   "title": "RequiredWording",
+   "type": "object"
+  },
+  "Rules": {
+   "additionalProperties": false,
+   "properties": {
+    "voice": {
+     "items": {
+      "type": "string"
+     },
+     "title": "Voice",
+     "type": "array"
+    },
+    "no_emoji": {
+     "default": false,
+     "title": "No Emoji",
+     "type": "boolean"
+    },
+    "required_wording": {
+     "items": {
+      "$ref": "#/$defs/RequiredWording"
+     },
+     "title": "Required Wording",
+     "type": "array"
+    },
+    "forbidden_phrases": {
+     "items": {
+      "$ref": "#/$defs/ForbiddenPhrase"
+     },
+     "title": "Forbidden Phrases",
+     "type": "array"
+    },
+    "claims_without_receipt": {
+     "$ref": "#/$defs/ClaimsRule"
+    }
+   },
+   "title": "Rules",
+   "type": "object"
+  },
+  "SetNode": {
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "ui": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/UI"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null
+    },
+    "note": {
+     "default": "",
+     "title": "Note",
+     "type": "string"
+    },
+    "type": {
+     "const": "set",
+     "default": "set",
+     "title": "Type",
+     "type": "string"
+    },
+    "assign": {
+     "additionalProperties": true,
+     "description": "{'state.x': 'expression', ...}",
+     "title": "Assign",
+     "type": "object"
+    }
+   },
+   "required": [
+    "id"
+   ],
+   "title": "SetNode",
+   "type": "object"
+  },
+  "Settings": {
+   "additionalProperties": false,
+   "properties": {
+    "languages": {
+     "description": "Reply languages; the first is the default.",
+     "items": {
+      "type": "string"
+     },
+     "title": "Languages",
+     "type": "array"
+    },
+    "script_lang": {
+     "additionalProperties": {
+      "type": "string"
+     },
+     "description": "Map a detected script to a language, e.g. {'latin': 'en', 'other': 'xx'}.",
+     "title": "Script Lang",
+     "type": "object"
+    },
+    "contact_slot": {
+     "default": "phone",
+     "description": "The slot holding the customer's contact (captured by code first).",
+     "title": "Contact Slot",
+     "type": "string"
+    },
+    "ask_timeout_turns": {
+     "default": 3,
+     "title": "Ask Timeout Turns",
+     "type": "integer"
+    },
+    "max_asks": {
+     "default": 2,
+     "description": "How often per session the flow may ask for the contact.",
+     "title": "Max Asks",
+     "type": "integer"
+    },
+    "max_reasks": {
+     "default": 2,
+     "description": "A journey asking again after a reply more than this takes its gave_up port.",
+     "title": "Max Reasks",
+     "type": "integer"
+    },
+    "paused_template": {
+     "default": "",
+     "description": "Template sent while a session is handed over to a human.",
+     "title": "Paused Template",
+     "type": "string"
+    },
+    "agents_default_online": {
+     "default": false,
+     "title": "Agents Default Online",
+     "type": "boolean"
+    },
+    "tools_mode": {
+     "default": "live",
+     "enum": [
+      "live",
+      "mock"
+     ],
+     "title": "Tools Mode",
+     "type": "string"
+    },
+    "allow_hosts": {
+     "description": "Hosts the built-in http.request tool may call.",
+     "items": {
+      "type": "string"
+     },
+     "title": "Allow Hosts",
+     "type": "array"
+    }
+   },
+   "title": "Settings",
+   "type": "object"
+  },
+  "Slot": {
+   "additionalProperties": false,
+   "properties": {
+    "type": {
+     "default": "string",
+     "enum": [
+      "string",
+      "phone",
+      "email",
+      "enum",
+      "number"
+     ],
+     "title": "Type",
+     "type": "string"
+    },
+    "description": {
+     "default": "",
+     "title": "Description",
+     "type": "string"
+    },
+    "validator": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Validator"
+    },
+    "values": {
+     "description": "Options of an enum slot.",
+     "items": {
+      "type": "string"
+     },
+     "title": "Values",
+     "type": "array"
+    },
+    "value_descriptions": {
+     "additionalProperties": {
+      "type": "string"
+     },
+     "description": "What each enum option means; shown to the extractor so it picks the most specific option.",
+     "title": "Value Descriptions",
+     "type": "object"
+    },
+    "value_descriptions_source": {
+     "default": "",
+     "title": "Value Descriptions Source",
+     "type": "string"
+    },
+    "persist": {
+     "default": "session",
+     "enum": [
+      "session",
+      "turn"
+     ],
+     "title": "Persist",
+     "type": "string"
+    },
+    "pii": {
+     "default": false,
+     "title": "Pii",
+     "type": "boolean"
+    },
+    "overwrite": {
+     "default": "latest",
+     "enum": [
+      "latest",
+      "keep_first"
+     ],
+     "title": "Overwrite",
+     "type": "string"
+    }
+   },
+   "title": "Slot",
+   "type": "object"
+  },
+  "Template": {
+   "additionalProperties": false,
+   "description": "Approved wording, sent verbatim (placeholders like {{slots.name}} are filled in).",
+   "properties": {
+    "text": {
+     "additionalProperties": {
+      "type": "string"
+     },
+     "description": "One text per language.",
+     "title": "Text",
+     "type": "object"
+    },
+    "approved": {
+     "anyOf": [
+      {
+       "type": "boolean"
+      },
+      {
+       "additionalProperties": {
+        "type": "boolean"
+       },
+       "type": "object"
+      }
+     ],
+     "default": true,
+     "description": "Client sign-off, overall or per language.",
+     "title": "Approved"
+    },
+    "source": {
+     "default": "",
+     "title": "Source",
+     "type": "string"
+    },
+    "requires_receipt": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "description": "Only sent if this tool succeeded in the turn.",
+     "title": "Requires Receipt"
+    },
+    "covers": {
+     "description": "Templates made redundant when this one is sent.",
+     "items": {
+      "type": "string"
+     },
+     "title": "Covers",
+     "type": "array"
+    },
+    "counts_as_ask": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "description": "Sending this template counts as asking for this slot.",
+     "title": "Counts As Ask"
+    }
+   },
+   "required": [
+    "text"
+   ],
+   "title": "Template",
+   "type": "object"
+  },
+  "ToolNode": {
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "ui": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/UI"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null
+    },
+    "note": {
+     "default": "",
+     "title": "Note",
+     "type": "string"
+    },
+    "type": {
+     "const": "tool",
+     "default": "tool",
+     "title": "Type",
+     "type": "string"
+    },
+    "tool": {
+     "title": "Tool",
+     "type": "string"
+    },
+    "save_as": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "description": "Where the tool's data goes, e.g. vars.result.",
+     "title": "Save As"
+    }
+   },
+   "required": [
+    "id",
+    "tool"
+   ],
+   "title": "ToolNode",
+   "type": "object"
+  },
+  "ToolSpec": {
+   "additionalProperties": false,
+   "description": "A tool instance journeys reference by its key. `impl` names the registered implementation (defaults to the key).",
+   "properties": {
+    "impl": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Impl"
+    },
+    "description": {
+     "default": "",
+     "title": "Description",
+     "type": "string"
+    },
+    "args": {
+     "additionalProperties": true,
+     "description": "Arguments; strings may use {{slots.x}} placeholders.",
+     "title": "Args",
+     "type": "object"
+    },
+    "idempotency_key": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "description": "Template of a key; repeated calls with the same key merge.",
+     "title": "Idempotency Key"
+    },
+    "side_effect": {
+     "default": true,
+     "title": "Side Effect",
+     "type": "boolean"
+    },
+    "timeout_ms": {
+     "default": 5000,
+     "title": "Timeout Ms",
+     "type": "integer"
+    },
+    "mock": {
+     "anyOf": [
+      {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "description": "Result used in mock mode: {'ok': true, 'data': {...}}.",
+     "title": "Mock"
+    }
+   },
+   "title": "ToolSpec",
+   "type": "object"
+  },
+  "TriggerNode": {
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "ui": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/UI"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null
+    },
+    "note": {
+     "default": "",
+     "title": "Note",
+     "type": "string"
+    },
+    "type": {
+     "const": "trigger",
+     "default": "trigger",
+     "title": "Type",
+     "type": "string"
+    },
+    "scope": {
+     "default": "part",
+     "enum": [
+      "turn",
+      "part"
+     ],
+     "title": "Scope",
+     "type": "string"
+    },
+    "mode": {
+     "default": "tap",
+     "enum": [
+      "tap",
+      "exclusive"
+     ],
+     "title": "Mode",
+     "type": "string"
+    },
+    "takeover": {
+     "anyOf": [
+      {
+       "const": "turn",
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Takeover"
+    },
+    "priority": {
+     "default": 0,
+     "title": "Priority",
+     "type": "integer"
+    },
+    "threshold": {
+     "anyOf": [
+      {
+       "type": "number"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "description": "Default 0.5 for taps, 0.65 for exclusive journeys.",
+     "title": "Threshold"
+    },
+    "when": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "When"
+    },
+    "decision": {
+     "$ref": "#/$defs/DecisionQuestion"
+    }
+   },
+   "required": [
+    "id",
+    "decision"
+   ],
+   "title": "TriggerNode",
+   "type": "object"
+  },
+  "UI": {
+   "additionalProperties": false,
+   "properties": {
+    "x": {
+     "default": 0,
+     "title": "X",
+     "type": "number"
+    },
+    "y": {
+     "default": 0,
+     "title": "Y",
+     "type": "number"
+    }
+   },
+   "title": "UI",
+   "type": "object"
+  },
+  "Validator": {
+   "additionalProperties": false,
+   "properties": {
+    "normalize": {
+     "description": "Steps: unicode_digits, strip_non_digits, lower, strip, {'country_code': {'code': '1', 'trunk': ''}}.",
+     "items": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "additionalProperties": true,
+        "type": "object"
+       }
+      ]
+     },
+     "title": "Normalize",
+     "type": "array"
+    },
+    "pattern": {
+     "description": "Regular expression the normalised value must fully match.",
+     "title": "Pattern",
+     "type": "string"
+    }
+   },
+   "required": [
+    "pattern"
+   ],
+   "title": "Validator",
+   "type": "object"
+  }
+ },
+ "additionalProperties": false,
+ "description": "A complete assistant configuration (schema_version 2).",
+ "properties": {
+  "$schema": {
+   "anyOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "null"
+    }
+   ],
+   "default": null,
+   "title": "$Schema"
+  },
+  "schema_version": {
+   "const": 2,
+   "default": 2,
+   "title": "Schema Version",
+   "type": "integer"
+  },
+  "version": {
+   "default": 0,
+   "title": "Version",
+   "type": "integer"
+  },
+  "changelog": {
+   "items": {
+    "$ref": "#/$defs/ChangelogEntry"
+   },
+   "title": "Changelog",
+   "type": "array"
+  },
+  "profile": {
+   "$ref": "#/$defs/Profile"
+  },
+  "prompts": {
+   "$ref": "#/$defs/Prompts"
+  },
+  "settings": {
+   "$ref": "#/$defs/Settings"
+  },
+  "contacts": {
+   "additionalProperties": true,
+   "description": "Free data, usable as {{contacts.x}}.",
+   "title": "Contacts",
+   "type": "object"
+  },
+  "validators": {
+   "additionalProperties": {
+    "$ref": "#/$defs/Validator"
+   },
+   "title": "Validators",
+   "type": "object"
+  },
+  "slots": {
+   "additionalProperties": {
+    "$ref": "#/$defs/Slot"
+   },
+   "title": "Slots",
+   "type": "object"
+  },
+  "templates": {
+   "additionalProperties": {
+    "$ref": "#/$defs/Template"
+   },
+   "title": "Templates",
+   "type": "object"
+  },
+  "rules": {
+   "$ref": "#/$defs/Rules"
+  },
+  "channels": {
+   "additionalProperties": {
+    "$ref": "#/$defs/Channel"
+   },
+   "title": "Channels",
+   "type": "object"
+  },
+  "flow": {
+   "$ref": "#/$defs/Flow"
+  },
+  "policies": {
+   "items": {
+    "$ref": "#/$defs/Policy"
+   },
+   "title": "Policies",
+   "type": "array"
+  },
+  "tools": {
+   "additionalProperties": {
+    "$ref": "#/$defs/ToolSpec"
+   },
+   "title": "Tools",
+   "type": "object"
+  },
+  "journeys": {
+   "items": {
+    "$ref": "#/$defs/Journey"
+   },
+   "title": "Journeys",
+   "type": "array"
+  }
+ },
+ "title": "Steward configuration",
+ "type": "object",
+ "$id": "urn:steward:config:2"
+}
