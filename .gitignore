@@ -19,3 +19,7 @@ __pycache__/
 /build/
 *.egg-info/
 .steward-build-cache/
+
+# figure renderer (Remotion)
+figures/node_modules/
+figures/out/

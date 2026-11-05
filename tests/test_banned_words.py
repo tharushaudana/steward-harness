@@ -8,9 +8,9 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SCANNED = ("src", "tests", "examples", "docs", "schema")
+SCANNED = ("src", "tests", "examples", "docs", "schema", "figures")
 TOP_FILES = ("README.md", "AGENTS.md", "llms.txt", "CHANGELOG.md", "pyproject.toml", ".env.example")
-TEXT_SUFFIXES = {".py", ".md", ".txt", ".json", ".yaml", ".yml", ".toml", ".html", ".js", ".css", ".cfg", ".ini"}
+TEXT_SUFFIXES = {".py", ".md", ".txt", ".json", ".yaml", ".yml", ".toml", ".html", ".js", ".css", ".cfg", ".ini", ".ts", ".tsx", ".mjs"}
 
 
 def banned_hashes() -> set[str]:
@@ -23,7 +23,8 @@ def files() -> list[Path]:
     for d in SCANNED:
         if (ROOT / d).exists():
             out += [p for p in (ROOT / d).rglob("*") if p.is_file() and p.suffix in TEXT_SUFFIXES
-                    and p.name != "banned_hashes.txt" and "vendor" not in p.parts]
+                    and p.name != "banned_hashes.txt" and "vendor" not in p.parts
+                    and "node_modules" not in p.parts and p.name != "package-lock.json"]
     return out
 
 

@@ -50,7 +50,7 @@ steward = "steward.cli:main"
 packages = ["src/steward"]
 
 [tool.hatch.build.targets.sdist]
-exclude = ["demo", "runs", "*.db"]
+exclude = ["demo", "runs", "*.db", "figures", "assets"]
 
 [tool.ruff]
 line-length = 120
