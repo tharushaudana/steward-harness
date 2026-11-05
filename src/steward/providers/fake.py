@@ -7,7 +7,8 @@
     fake.on_chat("price", "Our price is listed in the catalogue.")  # substring of the last message -> text
     fake.on_chat_json("extract", {"name": "Ada", "phone": None})     # purpose -> JSON (for schema calls)
 
-Unscripted decisions default to "no" (noul 0.0), the first non-"none" option for choices with confidence 0.0,
+Unscripted decisions default to "no" (noul 0.0), the neutral option ("none" or "other") for choices that have one
+(else the first option with confidence 0.0),
 and score 0.0. Unscripted chats return `default_text`. Every call is recorded in `fake.calls`.
 """
 
@@ -100,9 +101,11 @@ class FakeProvider:
                 a = cast(Mapping[str, Any], answer(state, q) if callable(answer) else answer)
                 return cast(Answer, {"type": q["type"], **a})
         if q["type"] == "choice":
-            options = [k for k in (q.get("criteria") or {}) if k != "none"]
-            if "none" in (q.get("criteria") or {}):
-                return {"type": "choice", "choice": "none", "confidence": 1.0, "probabilities": {"none": 1.0}}
+            criteria = q.get("criteria") or {}
+            for neutral in ("none", "other"):  # unscripted: the neutral option when there is one
+                if neutral in criteria:
+                    return {"type": "choice", "choice": neutral, "confidence": 1.0, "probabilities": {neutral: 1.0}}
+            options = list(criteria)
             return {"type": "choice", "choice": options[0] if options else "", "confidence": 0.0}
         if q["type"] == "score":
             return {"type": "score", "score": 0.0}

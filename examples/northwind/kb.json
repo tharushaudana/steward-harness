@@ -1,0 +1,450 @@
+{
+ "meta": {
+  "version": "nw-1",
+  "name": "Northwind Bikes",
+  "summary": "A fictional bicycle shop",
+  "built_at": 0.0
+ },
+ "nodes": [
+  {
+   "id": "ROOT",
+   "parent_id": null,
+   "kind": "root",
+   "title": "Northwind Bikes",
+   "description": "A fictional bicycle shop",
+   "order": 0
+  },
+  {
+   "id": "D1",
+   "parent_id": "ROOT",
+   "kind": "domain",
+   "title": "Bikes",
+   "description": "Bike models, prices, sizes",
+   "order": 1
+  },
+  {
+   "id": "D2",
+   "parent_id": "ROOT",
+   "kind": "domain",
+   "title": "Shop and service",
+   "description": "Workshop, delivery, returns, contact",
+   "order": 2
+  },
+  {
+   "id": "T1.1",
+   "parent_id": "D1",
+   "kind": "topic",
+   "title": "Models and specifications",
+   "description": "Frame sizes, weight, gears of each bike",
+   "order": 1
+  },
+  {
+   "id": "T1.2",
+   "parent_id": "D1",
+   "kind": "topic",
+   "title": "Prices",
+   "description": "Bike prices and delivery fees",
+   "order": 2
+  },
+  {
+   "id": "T2.1",
+   "parent_id": "D2",
+   "kind": "topic",
+   "title": "Workshop",
+   "description": "Repairs, servicing, tune-ups",
+   "order": 1
+  },
+  {
+   "id": "T2.2",
+   "parent_id": "D2",
+   "kind": "topic",
+   "title": "Orders and returns",
+   "description": "Delivery, returns, warranty, contact",
+   "order": 2
+  }
+ ],
+ "sections": [
+  {
+   "id": "S1",
+   "title": "Trail 500 mountain bike",
+   "text": "Trail 500 mountain bike\nFrame sizes: S, M, L, XL. Weight: 13.2 kg. 12 gears.\nSuspension: 140 mm front fork. Ideal for forest trails.",
+   "topic_id": "T1.1",
+   "doc_id": "doc-models",
+   "url": "https://northwind.example/bikes/trail-500",
+   "heading_path": "Bikes > Trail 500",
+   "summary": "Specs of the Trail 500 mountain bike: sizes, weight, gears, suspension",
+   "keywords": [
+    "trail 500",
+    "mountain bike",
+    "mtb"
+   ],
+   "questions": [
+    "What sizes does the Trail 500 come in?",
+    "How heavy is the Trail 500?"
+   ],
+   "tokens": 0,
+   "authority": "source",
+   "marks": []
+  },
+  {
+   "id": "S2",
+   "title": "City Cruiser commuter bike",
+   "text": "City Cruiser commuter bike\nFrame sizes: M, L. Weight: 15.8 kg. 7 gears.\nComes with mudguards, rack and lights.",
+   "topic_id": "T1.1",
+   "doc_id": "doc-models",
+   "url": "https://northwind.example/bikes/city-cruiser",
+   "heading_path": "Bikes > City Cruiser",
+   "summary": "Specs of the City Cruiser commuter bike",
+   "keywords": [
+    "city cruiser",
+    "commuter"
+   ],
+   "questions": [
+    "Does the City Cruiser have lights?"
+   ],
+   "tokens": 0,
+   "authority": "source",
+   "marks": []
+  },
+  {
+   "id": "S3",
+   "title": "Volt e-bike",
+   "text": "Volt electric bike\nFrame sizes: M, L. Weight: 22 kg. Range: up to 90 km.\nBattery: 500 Wh, charges in 4 hours.",
+   "topic_id": "T1.1",
+   "doc_id": "doc-models",
+   "url": "https://northwind.example/bikes/volt",
+   "heading_path": "Bikes > Volt",
+   "summary": "Specs of the Volt e-bike: range, battery, weight",
+   "keywords": [
+    "volt",
+    "e-bike",
+    "electric"
+   ],
+   "questions": [
+    "How far can the Volt go on one charge?"
+   ],
+   "tokens": 0,
+   "authority": "source",
+   "marks": []
+  },
+  {
+   "id": "S4",
+   "title": "Price list (old page)",
+   "text": "Prices\nTrail 500: $1,290\nCity Cruiser: $690\nVolt e-bike: $2,490\nDelivery fee: $49 per order.\nPrices include tax.",
+   "topic_id": "T1.2",
+   "doc_id": "doc-prices",
+   "url": "https://northwind.example/prices",
+   "heading_path": "Prices",
+   "summary": "Bike prices and delivery fee",
+   "keywords": [
+    "price",
+    "cost"
+   ],
+   "questions": [
+    "How much is the Trail 500?"
+   ],
+   "tokens": 0,
+   "authority": "source",
+   "marks": [
+    {
+     "by": "S9",
+     "lines": [
+      "Volt e-bike: $2,490"
+     ],
+     "evidence": [
+      "Volt e-bike: $2,290"
+     ],
+     "rejected": [],
+     "full": false,
+     "manual": false,
+     "why": "",
+     "p": null
+    }
+   ]
+  },
+  {
+   "id": "S5",
+   "title": "Workshop services",
+   "text": "Workshop\nWe service and repair bikes of every brand.\nBasic tune-up: $59. Full service: $129.\nBook a slot: +1 555 0101.",
+   "topic_id": "T2.1",
+   "doc_id": "doc-workshop",
+   "url": "https://northwind.example/workshop",
+   "heading_path": "Workshop",
+   "summary": "Workshop repairs and service prices, booking",
+   "keywords": [
+    "repair",
+    "service",
+    "tune-up"
+   ],
+   "questions": [
+    "Do you repair other brands?"
+   ],
+   "tokens": 0,
+   "authority": "source",
+   "marks": []
+  },
+  {
+   "id": "S6",
+   "title": "Delivery",
+   "text": "Delivery\nWe deliver within 3-5 working days. Delivery fee: $49 per order, free above $1,500.",
+   "topic_id": "T2.2",
+   "doc_id": "doc-orders",
+   "url": "https://northwind.example/delivery",
+   "heading_path": "Orders > Delivery",
+   "summary": "Delivery times and fees",
+   "keywords": [
+    "delivery",
+    "shipping"
+   ],
+   "questions": [
+    "How long does delivery take?"
+   ],
+   "tokens": 0,
+   "authority": "source",
+   "marks": []
+  },
+  {
+   "id": "S7",
+   "title": "Returns and warranty",
+   "text": "Returns\nUnused bikes can be returned within 30 days.\nWarranty: 5 years on frames, 2 years on parts.",
+   "topic_id": "T2.2",
+   "doc_id": "doc-orders",
+   "url": "https://northwind.example/returns",
+   "heading_path": "Orders > Returns",
+   "summary": "Return window and warranty",
+   "keywords": [
+    "return",
+    "warranty",
+    "refund"
+   ],
+   "questions": [
+    "What is the warranty?"
+   ],
+   "tokens": 0,
+   "authority": "source",
+   "marks": []
+  },
+  {
+   "id": "S8",
+   "title": "Contact",
+   "text": "Contact\nSales: +1 555 0100. Workshop: +1 555 0101. Email: hello@northwind.example.\nShop hours: Mon-Sat 9:00-18:00.",
+   "topic_id": "T2.2",
+   "doc_id": "doc-contact",
+   "url": "https://northwind.example/contact",
+   "heading_path": "Contact",
+   "summary": "Phone numbers, email and opening hours",
+   "keywords": [
+    "contact",
+    "phone",
+    "hours"
+   ],
+   "questions": [
+    "When are you open?"
+   ],
+   "tokens": 0,
+   "authority": "source",
+   "marks": []
+  },
+  {
+   "id": "S9",
+   "title": "Approved price list 2026",
+   "text": "Approved price list\nTrail 500: $1,290\nCity Cruiser: $690\nVolt e-bike: $2,290\nPrices include tax.",
+   "topic_id": "T1.2",
+   "doc_id": "doc-approved",
+   "url": "",
+   "heading_path": "Approved > Prices",
+   "summary": "Current approved bike prices",
+   "keywords": [
+    "price",
+    "cost"
+   ],
+   "questions": [
+    "How much is the Volt?"
+   ],
+   "tokens": 0,
+   "authority": "approved",
+   "marks": []
+  }
+ ],
+ "values": [
+  {
+   "id": "V1",
+   "section_id": "S4",
+   "entity": "bike:trail_500",
+   "attribute": "price",
+   "num": 1290,
+   "raw": "$1,290",
+   "unit": "USD",
+   "conditions": [],
+   "source_quote": "",
+   "verified": true,
+   "conflict_group": null,
+   "n_sources": 1,
+   "rank": 0
+  },
+  {
+   "id": "V2",
+   "section_id": "S4",
+   "entity": "bike:city_cruiser",
+   "attribute": "price",
+   "num": 690,
+   "raw": "$690",
+   "unit": "USD",
+   "conditions": [],
+   "source_quote": "",
+   "verified": true,
+   "conflict_group": null,
+   "n_sources": 1,
+   "rank": 0
+  },
+  {
+   "id": "V3",
+   "section_id": "S4",
+   "entity": "bike:volt",
+   "attribute": "price",
+   "num": 2490,
+   "raw": "$2,490",
+   "unit": "USD",
+   "conditions": [],
+   "source_quote": "",
+   "verified": true,
+   "conflict_group": "CG1",
+   "n_sources": 1,
+   "rank": 1
+  },
+  {
+   "id": "V4",
+   "section_id": "S9",
+   "entity": "bike:trail_500",
+   "attribute": "price",
+   "num": 1290,
+   "raw": "$1,290",
+   "unit": "USD",
+   "conditions": [],
+   "source_quote": "",
+   "verified": true,
+   "conflict_group": null,
+   "n_sources": 1,
+   "rank": 0
+  },
+  {
+   "id": "V5",
+   "section_id": "S9",
+   "entity": "bike:city_cruiser",
+   "attribute": "price",
+   "num": 690,
+   "raw": "$690",
+   "unit": "USD",
+   "conditions": [],
+   "source_quote": "",
+   "verified": true,
+   "conflict_group": null,
+   "n_sources": 1,
+   "rank": 0
+  },
+  {
+   "id": "V6",
+   "section_id": "S9",
+   "entity": "bike:volt",
+   "attribute": "price",
+   "num": 2290,
+   "raw": "$2,290",
+   "unit": "USD",
+   "conditions": [],
+   "source_quote": "",
+   "verified": true,
+   "conflict_group": "CG1",
+   "n_sources": 1,
+   "rank": 0
+  },
+  {
+   "id": "V7",
+   "section_id": "S6",
+   "entity": "fee:delivery",
+   "attribute": "amount",
+   "num": 49,
+   "raw": "$49",
+   "unit": "USD",
+   "conditions": [],
+   "source_quote": "",
+   "verified": true,
+   "conflict_group": null,
+   "n_sources": 1,
+   "rank": 0
+  }
+ ],
+ "entities": [
+  {
+   "id": "bike:trail_500",
+   "type": "bike",
+   "title": "Trail 500",
+   "aliases": [
+    "trail",
+    "trail 500 mtb"
+   ]
+  },
+  {
+   "id": "bike:city_cruiser",
+   "type": "bike",
+   "title": "City Cruiser",
+   "aliases": [
+    "cruiser"
+   ]
+  },
+  {
+   "id": "bike:volt",
+   "type": "bike",
+   "title": "Volt",
+   "aliases": [
+    "volt e-bike",
+    "e-bike"
+   ]
+  },
+  {
+   "id": "fee:delivery",
+   "type": "fee",
+   "title": "Delivery fee",
+   "aliases": []
+  }
+ ],
+ "calculators": [
+  {
+   "id": "order_total",
+   "title": "Order total",
+   "expression": "price * quantity + fee",
+   "entity_type": "bike",
+   "description": "Total for N bikes of one model including delivery",
+   "inputs": [
+    {
+     "var": "price",
+     "attribute": "price",
+     "entity": "$entity",
+     "fallback_entity": null
+    },
+    {
+     "var": "fee",
+     "attribute": "amount",
+     "entity": "fee:delivery",
+     "fallback_entity": null
+    }
+   ],
+   "user_inputs": [
+    {
+     "var": "quantity",
+     "description": "number of bikes ordered",
+     "ask": "How many bikes would you like?",
+     "unit": "bikes",
+     "default": null,
+     "assumption": null
+    }
+   ],
+   "applies_to": [
+    "bike:trail_500",
+    "bike:city_cruiser",
+    "bike:volt"
+   ],
+   "validated": true
+  }
+ ],
+ "edges": []
+}
