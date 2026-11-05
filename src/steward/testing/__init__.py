@@ -3,6 +3,6 @@ fictional knowledge base. Store contract suites live in steward.testing.contract
 
 from steward.providers.fake import FakeProvider
 from steward.stores.memory import memory_stores
-from steward.testing.fixtures import tiny_kb
+from steward.testing.fixtures import demo_provider, northwind_config, tiny_kb
 
-__all__ = ["FakeProvider", "memory_stores", "tiny_kb"]
+__all__ = ["FakeProvider", "demo_provider", "memory_stores", "northwind_config", "tiny_kb"]

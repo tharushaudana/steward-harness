@@ -6,6 +6,10 @@ the old price page), values for 3 bike models, a delivery fee entity and one cal
 
 from __future__ import annotations
 
+import json
+from importlib import resources
+from typing import Any
+
 from steward.knowledge.model import (
     CalcInput,
     Calculator,
@@ -18,6 +22,44 @@ from steward.knowledge.model import (
     UserInput,
     Value,
 )
+
+
+def northwind_config() -> dict[str, Any]:
+    """The fictional Northwind Bikes assistant configuration (same as examples/northwind/northwind.steward.json)."""
+    return json.loads(resources.files("steward.testing").joinpath("northwind.steward.json").read_text(encoding="utf-8"))
+
+
+def demo_provider() -> Any:
+    """An offline provider scripted for the Northwind demo: enough to click through the admin page and the journeys
+    without an API key (answers are canned; set OPENROUTER_API_KEY for real ones)."""
+    from steward.providers.fake import FakeProvider
+
+    fake = FakeProvider(default_text="(demo mode: set OPENROUTER_API_KEY for real answers)")
+
+    def kind(state: Any, q: Any) -> Any:
+        msg = str(state.get("latest_message", "")).lower()
+        small = any(w in msg.split() for w in ("hi", "hello", "hey", "thanks", "thank"))
+        return {"type": "choice", "choice": "chitchat" if small else "request", "confidence": 0.9}
+
+    def words(*needles: str) -> Any:
+        return lambda state, q: {"noul": 0.9 if any(n in str(state.get("latest_message", "")).lower() for n in needles) else 0.05}
+
+    fake.on_decide("kind", kind)
+    fake.on_decide("j_human_request", words("human", "person", "agent", "representative"))
+    fake.on_decide("j_lead_capture", lambda state, q: {"noul": 0.9 if any(c.isdigit() for c in str(state.get("latest_message", ""))) else 0.0})
+    fake.on_decide("p_careers", words("job", "career", "cv", "hiring"))
+    fake.on_decide("p_workshop", words("repair", "service", "workshop", "tune"))
+    fake.on_decide("r_resume", lambda state, q: {"noul": 0.9})
+    def extract(messages: Any) -> dict[str, Any]:  # demo-grade: a capitalised word as the name, the digits as the phone
+        import re
+
+        latest = messages[-1]["content"].split("LATEST MESSAGE:")[-1]
+        name = next((w for w in re.findall(r"[A-Z][a-z]+", latest) if w not in ("I", "Hi", "Hello", "My", "The")), None)
+        digits = re.findall(r"[+\d][\d\s()-]{6,}\d", latest)
+        return {"name": name, "phone": digits[0].strip() if digits else None}
+
+    fake.on_chat_json("extract", extract)
+    return fake
 
 
 def tiny_kb(version: str = "nw-1") -> KnowledgeSnapshot:

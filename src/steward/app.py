@@ -115,6 +115,10 @@ class Steward:
                 self._cache.pop(next(iter(self._cache)))
         return self._cache[doc.rev]
 
+    async def ensure_config(self) -> ConfigDoc | None:
+        """Seed the ConfigStore with the configuration given at construction (first start); return the published doc."""
+        return await self._doc("published")
+
     async def _doc(self, which: Which) -> ConfigDoc | None:
         cs = self.stores.config
         pub = await cs.published()

@@ -57,7 +57,7 @@ class FakeProvider:
         return self
 
     def on_chat_json(self, purpose: str, value: Any) -> FakeProvider:
-        """Structured (schema) calls with this purpose return `value` as JSON."""
+        """Structured (schema) calls with this purpose return `value` as JSON (or callable(messages) -> value)."""
         self._json_by_purpose[purpose] = value
         return self
 
@@ -68,6 +68,8 @@ class FakeProvider:
         value: Any = None
         if schema is not None and purpose in self._json_by_purpose:
             value = self._json_by_purpose[purpose]
+            if callable(value):  # a callable(messages) -> dict
+                value = value(messages)
         else:
             for rule in reversed(self._chat_rules):
                 value = rule(messages)
