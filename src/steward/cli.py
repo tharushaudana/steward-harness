@@ -1,6 +1,6 @@
 """Command line.
 
-  steward schema [-o FILE]          write the configuration JSON Schema (default: stdout)
+  steward schema [-o FILE] [--markdown]   the configuration JSON Schema, or the markdown reference
   steward check CONFIG              load + validate a configuration; exit 1 on errors
   steward migrate CONFIG [-o FILE]  upgrade an older configuration format to the current schema_version
 
@@ -23,8 +23,9 @@ from steward.errors import ConfigError
 
 def _cmd_schema(args: argparse.Namespace) -> int:
     from steward.config import schema
+    from steward.config.reference import config_reference
 
-    text = json.dumps(schema(), indent=1, ensure_ascii=False) + "\n"
+    text = config_reference() if args.markdown else json.dumps(schema(), indent=1, ensure_ascii=False) + "\n"
     if args.output:
         Path(args.output).write_text(text, encoding="utf-8")
         print(f"wrote {args.output}")
@@ -232,6 +233,7 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="command")
     p = sub.add_parser("schema", help="write the configuration JSON Schema")
     p.add_argument("-o", "--output")
+    p.add_argument("--markdown", action="store_true", help="the human-readable reference instead (docs/config-reference.md)")
     p.set_defaults(fn=_cmd_schema)
     p = sub.add_parser("check", help="load and validate a configuration file")
     p.add_argument("config")

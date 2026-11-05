@@ -46,6 +46,13 @@ def test_committed_schema_is_current():
     assert committed == schema(), "run: uv run steward schema -o schema/steward.schema.json"
 
 
+def test_committed_config_reference_is_current():
+    from steward.config.reference import config_reference
+
+    committed = (ROOT / "docs" / "config-reference.md").read_text(encoding="utf-8")
+    assert committed == config_reference(), "run: uv run steward schema --markdown -o docs/config-reference.md"
+
+
 def test_unknown_keys_and_bad_types_have_paths(raw):
     bad = copy.deepcopy(raw)
     bad["settings"]["max_askz"] = 3
