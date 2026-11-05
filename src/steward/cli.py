@@ -7,6 +7,7 @@
   steward demo [--port 8765]        the fictional Northwind assistant + admin page (offline unless OPENROUTER_API_KEY)
   steward serve CONFIG --sqlite F   serve a configuration (OpenRouter from the environment) with the admin page
   steward build DOCS.md... -o kb.json [--approved A.md]   build a knowledge base (paid model calls, cached)
+  steward eval CONFIG SCENARIOS [--knowledge kb.json] [--offline|--record|--replay] [--mock-tools] [--calibrate]
 """
 
 from __future__ import annotations
@@ -111,6 +112,57 @@ def _cmd_build(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_eval(args: argparse.Namespace) -> int:
+    import asyncio
+    import copy
+    import os
+    import time
+
+    from steward import Steward
+    from steward.evals import calibrate, load_scenarios, run_scenarios
+    from steward.evals.runner import print_result
+    from steward.knowledge import KnowledgeSnapshot, MemoryKnowledgeStore
+    from steward.stores.memory import memory_stores
+
+    _load_env_file()
+    raw = json.loads(Path(args.config).read_text(encoding="utf-8"))
+    scenarios = load_scenarios(args.scenarios)
+    snap = None
+    if args.knowledge:
+        snap = KnowledgeSnapshot.from_dict(json.loads(Path(args.knowledge).read_text(encoding="utf-8")))
+    provider: object
+    if args.offline or (not os.environ.get("OPENROUTER_API_KEY") and not args.replay):
+        from steward.testing import demo_provider
+
+        provider = demo_provider()
+        print("offline: scripted demo decisions (only meaningful for the Northwind example)")
+    elif args.replay:
+        provider = None
+    else:
+        from steward.providers import OpenRouter
+
+        provider = OpenRouter.from_env(spend_cap_usd=args.spend_cap)
+    if args.record or args.replay:
+        from steward.providers.cassette import Cassette
+
+        provider = Cassette(provider, args.cassette, mode="replay" if args.replay else "auto")  # type: ignore[arg-type]
+
+    def factory() -> Steward:
+        return Steward(copy.deepcopy(raw), provider=provider, stores=memory_stores(),  # type: ignore[arg-type]
+                       knowledge=MemoryKnowledgeStore(snap) if snap else None)
+
+    out = args.out or f"runs/{time.strftime('%Y%m%d-%H%M%S')}"
+    report = asyncio.run(run_scenarios(factory, scenarios, only=args.only.split(",") if args.only else None,
+                                       tags=args.tags.split(",") if args.tags else None, mock_tools=args.mock_tools,
+                                       out_dir=out, resume=args.resume, on_result=print_result))
+    print(f"\n{report.passed}/{len(report.results)} scenarios passed, cost ${report.cost_usd:.4f}; report: {out}/report.md")
+    if args.calibrate:
+        print("\ntrigger calibration:")
+        for s in calibrate(scenarios, report):
+            print(f"  {s.trigger:28} {'-> ' + str(s.suggested) if s.suggested is not None else '':8} {s.note}")
+    return 0 if report.ok else 1
+
+
 def _serve(bot: object, host: str, port: int, insecure_local: bool, knowledge_admin: object = None) -> int:
     try:
         import uvicorn
@@ -212,6 +264,23 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--cache", default=".steward-build-cache")
     p.add_argument("--budget", type=float, default=0.25, help="max spend in USD for this run")
     p.set_defaults(fn=_cmd_build)
+    p = sub.add_parser("eval", help="run multi-turn scenarios against a configuration (fresh in-memory stores)")
+    p.add_argument("config")
+    p.add_argument("scenarios", help="scenario file (.json, or .yaml with PyYAML)")
+    p.add_argument("--knowledge", help="a knowledge base JSON file (KnowledgeSnapshot)")
+    p.add_argument("--offline", action="store_true", help="scripted demo decisions instead of a model (Northwind only)")
+    p.add_argument("--cassette", default="runs/cassette.json")
+    g = p.add_mutually_exclusive_group()
+    g.add_argument("--record", action="store_true", help="record model calls into the cassette (reuses recordings)")
+    g.add_argument("--replay", action="store_true", help="replay the cassette only; fail on unrecorded calls")
+    p.add_argument("--mock-tools", action="store_true", help="tools return their mock results (no side effects)")
+    p.add_argument("--only", help="comma-separated scenario ids")
+    p.add_argument("--tags", help="comma-separated tags")
+    p.add_argument("--out", help="output directory (default runs/<timestamp>)")
+    p.add_argument("--resume", action="store_true", help="skip scenarios that already passed in --out")
+    p.add_argument("--calibrate", action="store_true", help="suggest trigger thresholds from the run")
+    p.add_argument("--spend-cap", type=float, default=0.5)
+    p.set_defaults(fn=_cmd_eval)
     args = parser.parse_args(argv)
     if not getattr(args, "fn", None):
         parser.print_help()

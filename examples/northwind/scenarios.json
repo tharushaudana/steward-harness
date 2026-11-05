@@ -1,0 +1,38 @@
+{
+ "setup": {"runtime": {"agents_online": false}},
+ "scenarios": [
+  {"id": "greeting", "tags": ["smalltalk"],
+   "turns": [{"user": "hello", "expect": {"status": "chitchat", "contains": ["Welcome to Northwind Bikes"], "no_journeys": ["lead_capture"]}}]},
+
+  {"id": "lead_saved_once", "tags": ["lead"],
+   "turns": [
+    {"user": "I'm Ada, 202 555 0147", "expect": {"journeys": {"lead_capture": "done"}, "tools": ["save_lead"],
+                                                 "slots": {"phone": "2025550147", "name": "Ada"}, "contains": ["Thank you, Ada"]}},
+    {"user": "my number again: 202 555 0147", "expect": {"no_tools": ["save_lead"], "not_contains": ["Thank you, Ada"]}}],
+   "records": {"lead": 1}},
+
+  {"id": "human_request_offline", "tags": ["handover"],
+   "turns": [
+    {"user": "I want to talk to a person", "expect": {"status": "needs_input", "pending": "human_request"}},
+    {"user": "Ada 202 555 0147", "expect": {"pending": null, "journeys": {"human_request": "done"},
+                                            "contains": ["Nobody from the team is available"]}}],
+   "records": {"lead": 1, "handover": 0}},
+
+  {"id": "human_request_online", "tags": ["handover"],
+   "setup": {"runtime": {"agents_online": true}},
+   "turns": [
+    {"user": "connect me to a person please, I'm Ada 202 555 0147", "expect": {"status": "handover", "tools": ["create_handover"]}},
+    {"user": "hello?", "expect": {"status": "paused", "max_llm_calls": 0}}],
+   "records": {"handover": 1}},
+
+  {"id": "careers_policy", "tags": ["policy"],
+   "turns": [{"user": "Are you hiring mechanics? Where do I send my CV?", "expect": {"policies": ["careers"], "no_journeys": ["lead_capture"]}}]},
+
+  {"id": "workshop_policy", "tags": ["policy"],
+   "turns": [{"user": "Can you service my bike's brakes?", "expect": {"policies": ["workshop"]}}]},
+
+  {"id": "invalid_phone", "tags": ["lead"],
+   "turns": [{"user": "I'm Ada, call me on 12 34 56 78 90 12 34", "expect": {"no_tools": ["save_lead"]}}],
+   "records": {"lead": 0}}
+ ]
+}
