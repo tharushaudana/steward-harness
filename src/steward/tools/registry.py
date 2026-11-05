@@ -89,10 +89,12 @@ class ToolRegistry:
         impl = self._impls.get(impl_id)
         try:
             if call.mode == "mock":
-                if impl is not None and impl.mock is not None:
-                    res = ToolResult.coerce(await _invoke(impl.mock, call, call.timeout_s))
-                elif spec.mock is not None:
+                if spec.mock is not None:  # the config instance's mock is the most specific
                     res = ToolResult.coerce(spec.mock)
+                elif impl is not None and impl.mock is not None:
+                    res = ToolResult.coerce(await _invoke(impl.mock, call, call.timeout_s))
+                elif impl is not None and not impl.side_effect:  # read-only tools are safe to run for real
+                    res = ToolResult.coerce(await _invoke(impl.fn, call, impl.timeout_s or call.timeout_s))
                 else:
                     res = ToolResult.failure(f"tool '{tool_id}' has no mock result")
             elif impl is None:

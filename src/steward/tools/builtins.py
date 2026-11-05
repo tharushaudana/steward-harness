@@ -51,7 +51,9 @@ def register_builtins(registry: ToolRegistry, stores: Stores) -> None:
         return ToolResult(ok=r.status_code < 400, data=data, error=None if r.status_code < 400 else f"HTTP {r.status_code}",
                           receipt={"status": r.status_code} if r.status_code < 400 else None)
 
-    registry.register("records.append", records_append, description="Append a record (idempotent by key)")
+    registry.register("records.append", records_append, description="Append a record (idempotent by key)",
+                      mock={"ok": True, "data": {"id": "mock", "enriched": []}, "receipt": {"record_id": "mock"}})
     registry.register("agents.available", agents_available, side_effect=False,
                       description="Whether human agents are online (admin switch)")
-    registry.register("http.request", http_request, description="Call an allow-listed HTTP endpoint")
+    registry.register("http.request", http_request, description="Call an allow-listed HTTP endpoint",
+                      mock={"ok": True, "data": {"mock": True}, "receipt": {"status": 200}})
