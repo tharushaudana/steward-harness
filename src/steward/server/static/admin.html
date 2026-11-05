@@ -1,0 +1,925 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Steward admin</title>
+<link rel="stylesheet" href="admin/vendor/drawflow.min.css">
+<script src="admin/vendor/drawflow.min.js"></script>
+<style>
+:root{--bg:#f6f7f9;--panel:#fff;--ink:#1d2330;--muted:#6b7385;--line:#e2e5ea;--accent:#2f6fec;--ok:#2f9e44;--bad:#e03131;--warn:#f08c00;
+  --dec:#8b5cf6;--llm:#2f6fec;--code:#8a92a3;--tool:#0ca678;--out:#e8590c;--sel:#f59f00;--soft:#eef3ff}
+@media (prefers-color-scheme:dark){:root{--bg:#12151b;--panel:#1a1e26;--ink:#e6e9ef;--muted:#9aa3b5;--line:#2b313d;--soft:#1f2a44}}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);height:100vh;display:flex;flex-direction:column}
+header{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--line)}
+header h1{font-size:15px;margin:0 6px 0 0}
+a{color:var(--accent)}
+.btn,.tabs button,select,input,textarea{font:inherit;color:var(--ink)}
+.btn,.tabs button{border:1px solid var(--line);background:var(--panel);padding:4px 10px;border-radius:6px;cursor:pointer}
+.btn:hover{border-color:var(--accent)} .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.danger{color:var(--bad)} .btn.sm{padding:1px 7px;font-size:12px} .btn:disabled{opacity:.5;cursor:default}
+.tabs{display:flex;gap:4px;flex-wrap:wrap} .tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.chip{font-size:12px;padding:2px 8px;border-radius:10px;border:1px solid var(--line);background:var(--bg);white-space:nowrap}
+.chip.draft{border-color:var(--warn);color:var(--warn)} .chip.pub{border-color:var(--ok);color:var(--ok)} .chip.err{border-color:var(--bad);color:var(--bad);cursor:pointer}
+.spacer{flex:1}
+main{flex:1;min-height:0;overflow:hidden}
+.view{display:none;height:100%;overflow:auto;padding:14px} .view.on{display:block}
+#v-journeys.on{display:grid;grid-template-columns:230px minmax(0,1fr) 340px;grid-template-rows:auto minmax(0,1fr);padding:0;overflow:hidden}
+#mainpath{grid-column:1/-1;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:flex-start;gap:6px;overflow-x:auto}
+.stage{border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:var(--bg);min-width:120px;font-size:13px}
+.stage b{display:block;font-size:12px;color:var(--muted);font-weight:600}
+.stage.collector{border-color:var(--out);box-shadow:inset 3px 0 0 var(--out)}
+.hook{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:92px;padding-top:6px}
+.hook .arrow{color:var(--muted);font-size:12px}
+.hook .plus{width:24px;height:24px;border-radius:50%;border:1px dashed var(--accent);color:var(--accent);background:var(--panel);cursor:pointer;font-weight:700;line-height:20px}
+.hook .jchips{display:flex;flex-direction:column;gap:2px;align-items:center}
+.hook .jchip{font-size:11px;padding:1px 6px;border-radius:8px;background:var(--soft);cursor:pointer;white-space:nowrap}
+#jlist{border-right:1px solid var(--line);background:var(--panel);overflow:auto;padding:8px}
+.jitem{padding:6px 8px;border-radius:6px;cursor:pointer;border:1px solid transparent;margin-bottom:4px}
+.jitem.on{border-color:var(--accent);background:var(--soft)} .jitem .sub{font-size:11px;color:var(--muted)}
+.jitem.off{opacity:.55}
+#canvaswrap{position:relative;min-width:0;display:flex;flex-direction:column}
+#palette{display:flex;gap:4px;flex-wrap:wrap;padding:6px 8px;border-bottom:1px solid var(--line);background:var(--panel);align-items:center}
+#drawflow{flex:1;min-height:0;position:relative;background:var(--bg);
+  background-image:radial-gradient(var(--line) 1px,transparent 1px);background-size:20px 20px}
+#inspector{border-left:1px solid var(--line);background:var(--panel);overflow:auto;padding:10px 12px}
+#inspector h3{margin:0 0 6px;font-size:14px}
+.help{font-size:12px;color:var(--muted);margin:2px 0 8px}
+label.f{display:block;font-size:12px;color:var(--muted);margin:8px 0 2px}
+input[type=text],input[type=number],textarea,select{width:100%;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+textarea{resize:vertical;min-height:52px}
+input[type=checkbox]{width:auto;vertical-align:-2px}
+.row{display:flex;gap:6px;align-items:center} .row>*{flex:1} .row>.btn,.row>input[type=checkbox]{flex:0 0 auto}
+.errs{border:1px solid var(--bad);border-radius:6px;padding:6px 8px;margin:6px 0;font-size:12px;color:var(--bad)}
+/* drawflow theme */
+.drawflow .drawflow-node{background:var(--panel);border:1px solid var(--line);border-radius:8px;color:var(--ink);min-width:170px;width:auto;padding:0;box-shadow:0 1px 2px #0001}
+.drawflow .drawflow-node.selected{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.drawflow .drawflow-node .input,.drawflow .drawflow-node .output{width:13px;height:13px;border:2px solid var(--muted);background:var(--panel)}
+.drawflow .drawflow-node .outputs{display:flex;flex-direction:column;justify-content:center}
+.drawflow .drawflow-node .drawflow_content_node{padding-right:34px}
+.drawflow .drawflow-node .output{position:relative;margin:7px 0}
+.drawflow .drawflow-node .output::after{content:attr(data-port);position:absolute;left:15px;top:-4px;font-size:10px;color:var(--muted);white-space:nowrap}
+.drawflow .connection .main-path{stroke:var(--muted);stroke-width:2px}
+.drawflow .connection.taken .main-path{stroke:var(--sel);stroke-width:4px}
+.drawflow-node.visited{box-shadow:0 0 0 3px var(--sel)!important}
+.card{padding:6px 10px;border-left:4px solid var(--code);border-radius:8px}
+.card .ct{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);letter-spacing:.03em}
+.card .cid{font-weight:600;font-size:13px}
+.card .cs{font-size:11px;color:var(--muted);max-width:180px;white-space:normal;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.card .out{font-size:10px;color:var(--out);font-weight:600;margin-top:2px}
+.card .ebadge{display:none;font-size:10px;color:#fff;background:var(--bad);border-radius:8px;padding:0 6px;margin-left:4px}
+.card.haserr .ebadge{display:inline}
+.card .steps{display:none;font-size:10px;color:#000;background:var(--sel);border-radius:8px;padding:0 6px;margin-left:4px}
+.visited .card .steps{display:inline}
+.t-trigger{border-left-color:var(--dec)}.t-decision{border-left-color:var(--dec)}.t-extract{border-left-color:var(--llm)}
+.t-tool{border-left-color:var(--tool)}.t-ask{border-left-color:var(--warn)}.t-emit{border-left-color:var(--out)}.t-end{border-left-color:var(--ink)}
+/* lists, tables */
+.card2{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:10px}
+.card2 h3{margin:0 0 4px;font-size:14px;display:flex;gap:8px;align-items:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+table{border-collapse:collapse;width:100%;font-size:12px}
+th,td{padding:4px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top} th{color:var(--muted);font-weight:600}
+.pill{font-size:11px;padding:1px 7px;border-radius:9px;border:1px solid var(--line)}
+.pill.ok{color:var(--ok);border-color:var(--ok)} .pill.bad{color:var(--bad);border-color:var(--bad)} .pill.warn{color:var(--warn);border-color:var(--warn)}
+.muted{color:var(--muted)} .small{font-size:12px} .mono{font-family:ui-monospace,Consolas,monospace;font-size:12px}
+pre{white-space:pre-wrap;word-break:break-word;font-size:12px;background:var(--bg);padding:8px;border-radius:6px;max-height:340px;overflow:auto;margin:4px 0}
+.strike{text-decoration:line-through;color:var(--muted)}
+/* test chat */
+#v-test.on{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:12px}
+#tmsgs{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px;overflow:auto;height:calc(100vh - 220px)}
+.msg{margin:0 0 12px} .msg.user{text-align:right}
+.bubble{display:inline-block;text-align:left;padding:8px 11px;border-radius:10px;background:var(--bg);border:1px solid var(--line);max-width:92%;white-space:pre-wrap;word-wrap:break-word}
+.msg.user .bubble{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tmeta{font-size:12px;color:var(--muted);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#modal{position:fixed;inset:0;background:#0006;display:none;align-items:center;justify-content:center;z-index:50}
+#modal .box{background:var(--panel);border-radius:10px;padding:16px;max-width:620px;width:92%;max-height:84vh;overflow:auto}
+@media (max-width:900px){#v-journeys.on{grid-template-columns:1fr;grid-template-rows:auto auto 60vh auto;overflow:auto}
+  #v-test.on,.grid2,.grid3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Steward</h1>
+  <span id="kbname" class="chip"></span>
+  <span id="statechip" class="chip"></span>
+  <span id="errchip" class="chip err" style="display:none" onclick="showErrors()"></span>
+  <nav class="tabs" id="tabs"></nav>
+  <span class="spacer"></span>
+  <button class="btn" onclick="validateNow(true)">Validate</button>
+  <button class="btn" id="savebtn" onclick="saveDraft()">Save draft</button>
+  <button class="btn primary" onclick="publishNow()">Publish</button>
+  <select id="moremenu" style="width:auto" onchange="moreAction(this)">
+    <option value="">More…</option><option value="discard">Discard draft</option><option value="history">History / restore</option>
+    <option value="json">View JSON</option>
+  </select>
+  
+</header>
+<main>
+  <section class="view" id="v-journeys">
+    <div id="mainpath"></div>
+    <div id="jlist"></div>
+    <div id="canvaswrap"><div id="palette"></div><div id="drawflow"></div></div>
+    <div id="inspector"></div>
+  </section>
+  <section class="view" id="v-policies"></section>
+  <section class="view" id="v-rules"></section>
+  <section class="view" id="v-templates"></section>
+  <section class="view" id="v-prompt"></section>
+  <section class="view" id="v-slots"></section>
+  <section class="view" id="v-approved"></section>
+  <section class="view" id="v-records"></section>
+  <section class="view" id="v-test">
+    <div><div id="tmsgs"></div>
+      <div class="row" style="margin-top:8px"><textarea id="tq" placeholder="Message as a customer… (Enter to send)" style="min-height:44px"></textarea>
+        <button class="btn primary" onclick="testSend()">Send</button></div></div>
+    <div id="tside"></div>
+  </section>
+</main>
+<div id="modal" onclick="if(event.target===this)closeModal()"><div class="box" id="modalbox"></div></div>
+<script>
+// ======================================================================== state
+const API = location.pathname.replace(/\/admin\/?$/, "");
+let H = null, REV = "", PUBREV = "", DIRTY = false, ERRS = [], CATALOG = {}, UNITS = {}, PROFILE_FIELDS = [], AGENTS = false;
+let LANGS = ["en"], KNOWLEDGE_ADMIN = false, curJ = null, editor = null, DF = {}, DFR = {}, loading = false, selNode = null, lastPaths = {}, IS_DRAFT = false;
+const TABS = [["journeys","Journeys"],["policies","Policies"],["rules","Rules"],["templates","Templates"],["prompt","Prompt & profile"],
+  ["slots","Slots, tools & contacts"],["approved","Approved knowledge"],["records","Records"],["test","Test"]];
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+async function api(path, opt = {}) {
+  const r = await fetch(path, {headers: {"Content-Type": "application/json"}, ...opt,
+                               body: opt.body && typeof opt.body !== "string" ? JSON.stringify(opt.body) : opt.body});
+  const t = await r.text(); let j; try { j = JSON.parse(t) } catch { j = {detail: t} }
+  if (!r.ok) throw Object.assign(new Error(j.detail || r.statusText), {status: r.status});
+  return j;
+}
+function toast(msg, bad) {
+  const d = document.createElement("div"); d.textContent = msg;
+  d.style.cssText = `position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:${bad ? "var(--bad)" : "var(--ink)"};color:var(--panel);padding:8px 14px;border-radius:8px;z-index:60;max-width:80vw`;
+  document.body.appendChild(d); setTimeout(() => d.remove(), bad ? 5000 : 2500);
+}
+function modal(html) { $("#modalbox").innerHTML = html; $("#modal").style.display = "flex"; }
+function closeModal() { $("#modal").style.display = "none"; }
+
+// ======================================================================== load / save / validate / publish
+async function load() {
+  const [g, cat] = await Promise.all([api(API + "/config?draft=1"), api(API + "/catalog")]);
+  if (!g.harness) { document.body.innerHTML = `<p style="padding:20px">This knowledge base (${esc(g.kb)}) has no harness_${esc(g.kb)}.json yet.</p>`; return; }
+  H = g.harness; REV = g.rev; PUBREV = g.published_rev; IS_DRAFT = g.is_draft; ERRS = g.errors; AGENTS = g.agents_online;
+  CATALOG = cat.cards; UNITS = cat.units; PROFILE_FIELDS = cat.profile_fields; LANGS = cat.languages || ["en"]; KNOWLEDGE_ADMIN = !!cat.knowledge_admin;
+  for (const k of ["journeys","policies"]) H[k] = H[k] || [];
+  for (const k of ["templates","slots","tools","contacts","validators","rules","settings","flow","channels","prompts","profile"]) H[k] = H[k] || {};
+  $("#kbname").textContent = "Version " + (g.version ?? "?");
+  DIRTY = false; status(); renderAll();
+}
+function status() {
+  const c = $("#statechip");
+  if (DIRTY) { c.className = "chip draft"; c.textContent = "Unsaved changes"; }
+  else if (IS_DRAFT) { c.className = "chip draft"; c.textContent = `Draft saved (not live) · published v${H.version ?? "?"}`; }
+  else { c.className = "chip pub"; c.textContent = `Published v${H.version ?? "?"} · live`; }
+  const hard = ERRS.filter(e => e.severity !== "warning");
+  const ec = $("#errchip");
+  ec.style.display = ERRS.length ? "" : "none";
+  ec.textContent = hard.length ? `${hard.length} errors` : `${ERRS.length} warnings`;
+  ec.style.color = hard.length ? "var(--bad)" : "var(--warn)"; ec.style.borderColor = ec.style.color;
+}
+let vTimer = null;
+function markDirty(rerenderCanvas) {
+  DIRTY = true; status();
+  clearTimeout(vTimer); vTimer = setTimeout(() => validateNow(false), 600);
+  if (rerenderCanvas) renderCanvas();
+}
+async function validateNow(show) {
+  try { ERRS = (await api(API + "/config/validate", {method: "POST", body: H})).errors; } catch (e) { toast(e.message, true); }
+  status(); paintErrors();
+  if (show) ERRS.length ? showErrors() : toast("No problems found");
+}
+function showErrors() {
+  modal(`<h3>Validation</h3>` + (ERRS.length ? `<table><tr><th>Where</th><th>Problem</th></tr>` + ERRS.map(e =>
+    `<tr><td class="mono">${esc([e.journey, e.node, e.policy, e.template].filter(Boolean).join(" · ") || "config")}</td>
+     <td>${e.severity === "warning" ? '<span class="pill warn">warning</span> ' : ""}${esc(e.msg)}</td></tr>`).join("") + `</table>` : "<p>No problems.</p>")
+    + `<p><button class="btn" onclick="closeModal()">Close</button></p>`);
+}
+async function saveDraft() {
+  try {
+    const r = await api(API + "/config", {method: "PUT", body: {config: H, base_rev: REV}});
+    REV = r.rev; ERRS = r.errors; DIRTY = false; IS_DRAFT = true; status(); paintErrors(); toast("Draft saved (not live yet)");
+    return true;
+  } catch (e) {
+    toast(e.status === 409 ? "Someone else saved meanwhile: reload the page (your unsaved edits would be lost)" : e.message, true);
+    return false;
+  }
+}
+async function publishNow() {
+  if (DIRTY && !(await saveDraft())) return;
+  if (!IS_DRAFT) return toast("Nothing to publish: the live configuration has no pending draft");
+  await validateNow(false);
+  if (ERRS.some(e => e.severity !== "warning")) { showErrors(); return; }
+  const note = prompt("Publish the draft to the live assistant. Short note for the history:", "");
+  if (note === null) return;
+  try { const r = await api(API + "/config/publish", {method: "POST", body: {note}}); toast(`Published v${r.version}`); await load(); }
+  catch (e) { toast(e.message, true); }
+}
+async function moreAction(sel) {
+  const v = sel.value; sel.value = "";
+  if (v === "discard") {
+    if (!confirm("Discard the draft and all unsaved changes, and go back to the live configuration?")) return;
+    await api(API + "/config/discard", {method: "POST"}); await load(); toast("Draft discarded");
+  } else if (v === "history") {
+    const h = (await api(API + "/config/history")).history;
+    modal(`<h3>Published versions</h3><p class="help">Restoring copies an older version into the draft; publish it to make it live.</p>` +
+      (h.length ? `<table><tr><th>Version</th><th>Replaced</th><th>Note</th><th></th></tr>` + h.map(x =>
+        `<tr><td>v${x.version}</td><td>${new Date(x.ts * 1000).toLocaleString()}</td><td>${esc(x.note)}</td>
+         <td><button class="btn sm" onclick="restoreVersion(${x.id})">Restore to draft</button></td></tr>`).join("") + `</table>` : "<p class='muted'>No earlier versions yet (each publish keeps the one it replaces).</p>")
+      + `<p><button class="btn" onclick="closeModal()">Close</button></p>`);
+  } else if (v === "json") {
+    modal(`<h3>Configuration JSON (working copy)</h3><pre>${esc(JSON.stringify(H, null, 1))}</pre><p><button class="btn" onclick="closeModal()">Close</button></p>`);
+  }
+}
+async function restoreVersion(id) {
+  if (DIRTY && !confirm("You have unsaved changes; restoring replaces the draft. Continue?")) return;
+  await api(API + "/config/restore", {method: "POST", body: {id}}); closeModal(); await load(); toast("Restored into the draft");
+}
+window.addEventListener("beforeunload", e => { if (DIRTY) { e.preventDefault(); e.returnValue = ""; } });
+
+// ======================================================================== small form helpers (bound to objects)
+function inp(obj, key, opt = {}) { return `<div class="fld">${inpRaw(obj, key, opt)}</div>`; }
+function inpRaw(obj, key, opt) {          // text / number / textarea / select / checkbox bound to obj[key]
+  const id = "f" + Math.random().toString(36).slice(2);
+  setTimeout(() => {
+    const e = document.getElementById(id); if (!e) return;
+    const ev = opt.type === "checkbox" || e.tagName === "SELECT" ? "change" : "input";
+    e.addEventListener(ev, () => {
+      let v = opt.type === "checkbox" ? e.checked : e.value;
+      if (opt.type === "number") v = v === "" ? undefined : Number(v);
+      if (opt.list) v = v.split(opt.list === "lines" ? "\n" : ",").map(s => s.trim()).filter(Boolean);
+      if (v === "" || v === undefined) { if (opt.keepEmpty) obj[key] = ""; else delete obj[key]; } else obj[key] = v;
+      opt.onchange && opt.onchange(v);
+      markDirty(opt.canvas);
+    });
+  });
+  let val = obj[key] ?? opt.dflt;
+  if (opt.list && Array.isArray(val)) val = val.join(opt.list === "lines" ? "\n" : ", ");
+  const lab = opt.label ? `<label class="f" for="${id}">${esc(opt.label)}</label>` : "";
+  if (opt.type === "checkbox") return `<label class="f"><input id="${id}" type="checkbox" ${val ? "checked" : ""}> ${esc(opt.label || key)}</label>`;
+  if (opt.options) return lab + `<select id="${id}">` + opt.options.map(o => {
+      const [v, t] = Array.isArray(o) ? o : [o, o === "" ? "(none)" : o];
+      return `<option value="${esc(v)}" ${String(val ?? "") === String(v) ? "selected" : ""}>${esc(t)}</option>`; }).join("") + `</select>`;
+  if (opt.type === "textarea" || opt.list === "lines") return lab + `<textarea id="${id}" rows="${opt.rows || 3}" placeholder="${esc(opt.ph || "")}">${esc(val ?? "")}</textarea>`;
+  return lab + `<input id="${id}" type="${opt.type === "number" ? "number" : "text"}" ${opt.step ? `step="${opt.step}"` : ""} value="${esc(val ?? "")}" placeholder="${esc(opt.ph || "")}" class="${opt.mono ? "mono" : ""}">`;
+}
+const tplOptions = (none = true) => (none ? [""] : []).concat(Object.keys(H.templates).sort());
+const toolOptions = () => [""].concat(Object.keys(H.tools));
+
+// ======================================================================== tabs
+function renderTabs() {
+  $("#tabs").innerHTML = TABS.filter(([k]) => k !== "approved" || KNOWLEDGE_ADMIN).map(([k, t]) => `<button data-t="${k}" onclick="showTab('${k}')">${t}</button>`).join("");
+}
+function showTab(k) {
+  document.querySelectorAll(".view").forEach(v => v.classList.toggle("on", v.id === "v-" + k));
+  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.t === k));
+  try { localStorage.setItem("harness_tab", k); } catch {}
+  ({journeys: renderJourneys, policies: renderPolicies, rules: renderRules, templates: renderTemplates, prompt: renderPrompt,
+    slots: renderSlots, approved: renderApproved, records: renderRecords, test: renderTest})[k]();
+}
+function renderAll() {
+  renderTabs();
+  let k = "journeys"; try { k = localStorage.getItem("harness_tab") || k; } catch {}
+  if (location.hash.length > 1) {  // #tab or #journeys:<journey id>
+    const [t, jid] = location.hash.slice(1).split(":"); k = t;
+    if (jid) curJ = H.journeys.find(j => j.id === jid) || null;
+  }
+  showTab(TABS.some(t => t[0] === k) ? k : "journeys");
+}
+
+// ======================================================================== journeys: main path + list
+const trig = j => (j.nodes || []).find(n => n.type === "trigger") || {};
+function renderJourneys() {
+  if (!curJ || !H.journeys.includes(curJ)) curJ = H.journeys[0] || null;
+  renderMainPath(); renderJList(); renderPalette(); initEditor(); renderCanvas();
+}
+function renderMainPath() {
+  const chips = scope => H.journeys.filter(j => (trig(j).scope || "part") === scope).map(j =>
+    `<span class="jchip" style="${j.enabled === false ? "opacity:.5" : ""}" onclick="selectJourney('${esc(j.id)}')">${esc(j.title || j.id)}</span>`).join("")
+    + `<span class="muted small">${H.policies.filter(p => (p.scope || "part") === scope).length} policies</span>`;
+  const hook = (scope, label) => `<div class="hook"><span class="arrow">→ ${label} →</span>
+      <button class="plus" title="Add a journey here (${scope} scope)" onclick="addJourneyDialog('${scope}')">+</button><div class="jchips">${chips(scope)}</div></div>`;
+  $("#mainpath").innerHTML =
+    `<div class="stage"><b>1</b>Customer message</div>` + hook("turn", "whole turn") +
+    `<div class="stage"><b>2</b>Breakdown into parts</div>` + hook("part", "per part") +
+    `<div class="stage"><b>3</b>Collect knowledge<div class="muted small">(sources + approved)</div></div>` +
+    `<div class="hook"><span class="arrow">→</span></div>` +
+    `<div class="stage collector"><b>4 ● accepts</b>Output collector<div class="muted small">journey outputs + answer + templates</div></div>` +
+    `<div class="hook"><span class="arrow">→</span></div><div class="stage"><b>5</b>Final response<div class="muted small">rules checked in code</div></div>`;
+}
+function renderJList() {
+  $("#jlist").innerHTML = `<div class="row" style="margin-bottom:8px"><b>Journeys</b><button class="btn sm" onclick="addJourneyDialog('part')">+ New</button></div>` +
+    H.journeys.map(j => { const t = trig(j);
+      return `<div class="jitem ${j === curJ ? "on" : ""} ${j.enabled === false ? "off" : ""}" onclick="selectJourney('${esc(j.id)}')">
+        <div>${esc(j.title || j.id)}</div><div class="sub">${esc(j.id)} · ${t.scope || "part"} · ${t.mode || "tap"}${t.takeover ? " · takeover" : ""}${j.enabled === false ? " · off" : ""}</div></div>`; }).join("")
+    + `<p class="help">A <b>tap</b> runs alongside the knowledge answer; an <b>exclusive</b> journey takes over its part (or the whole turn with takeover).</p>`;
+}
+function selectJourney(id) { curJ = H.journeys.find(j => j.id === id); selNode = null; renderJourneys(); }
+function uniqueId(base, taken) { let i = 1, id = base; while (taken.has(id)) id = base + "_" + (++i); return id; }
+
+const JTEMPLATES = {
+  blank: scope => ({title: "New journey", nodes: [
+    {id: "t", type: "trigger", scope, mode: "tap", priority: 10, threshold: 0.6, decision: {type: "noul", instructions: "", criteria: {true: "", false: ""}}, ui: {x: 0, y: 0}},
+    {id: "x", type: "end", status: "done", ui: {x: 300, y: 0}}], edges: [{from: "t.next", to: "x"}]}),
+  lead: () => ({title: "Lead capture", nodes: [
+    {id: "t", type: "trigger", scope: "turn", mode: "tap", priority: 10, threshold: 0.5, when: "has(turn.contact_in_message)",
+     decision: {type: "noul", instructions: "In the LATEST message, does the customer share their OWN contact details (their phone number, possibly with their name)?",
+           criteria: {true: "Gives their own number.", false: "Quotes a company number, asks for our number, or mentions someone else's number."}}, ui: {x: 0, y: 0}},
+    {id: "ex", type: "extract", source: "conversation", slots: [], require: [], instructions: "", ui: {x: 240, y: 0}},
+    {id: "save", type: "tool", tool: "", ui: {x: 480, y: 0}},
+    {id: "ty", type: "emit", template: "", position: "suffix", ui: {x: 720, y: -40}},
+    {id: "x", type: "end", status: "done", ui: {x: 960, y: 0}}],
+    edges: [{from: "t.next", to: "ex"}, {from: "ex.ok", to: "save"}, {from: "ex.partial", to: "x"}, {from: "ex.error", to: "x"},
+            {from: "save.ok", to: "ty"}, {from: "save.error", to: "x"}, {from: "save.timeout", to: "x"}, {from: "ty.next", to: "x"}]}),
+  human: () => ({title: "Human handover", nodes: [
+    {id: "t", type: "trigger", scope: "part", mode: "exclusive", priority: 50, threshold: 0.65,
+     decision: {type: "noul", instructions: "Does this part of the message ask to talk with a human now?", criteria: {true: "Asks for a person or representative.", false: "Anything else."}}, ui: {x: 0, y: 0}},
+    {id: "have", type: "condition", expr: "has(slots.name) and has(slots.phone)", ui: {x: 240, y: 0}},
+    {id: "ask", type: "ask", require: ["name", "phone"], template: "", ui: {x: 480, y: 120}},
+    {id: "avail", type: "tool", tool: "", save_as: "vars.agents", ui: {x: 480, y: -40}},
+    {id: "isav", type: "condition", expr: "vars.agents.available == True", ui: {x: 720, y: -40}},
+    {id: "ho", type: "tool", tool: "", ui: {x: 960, y: -120}},
+    {id: "ok", type: "emit", template: "", position: "body", ui: {x: 1200, y: -120}},
+    {id: "na", type: "emit", template: "", position: "body", ui: {x: 960, y: 40}},
+    {id: "x", type: "end", status: "done", ui: {x: 1440, y: 0}},
+    {id: "x2", type: "end", status: "abandoned", ui: {x: 720, y: 160}}],
+    edges: [{from: "t.next", to: "have"}, {from: "have.true", to: "avail"}, {from: "have.false", to: "ask"}, {from: "ask.resume", to: "have"},
+            {from: "ask.gave_up", to: "x2"}, {from: "avail.ok", to: "isav"}, {from: "avail.error", to: "na"}, {from: "avail.timeout", to: "na"},
+            {from: "isav.true", to: "ho"}, {from: "isav.false", to: "na"}, {from: "ho.ok", to: "ok"}, {from: "ho.error", to: "na"},
+            {from: "ho.timeout", to: "na"}, {from: "ok.next", to: "x"}, {from: "na.next", to: "x"}]}),
+  takeover: () => ({title: "Immediate handover", nodes: [
+    {id: "t", type: "trigger", scope: "turn", mode: "exclusive", takeover: "turn", priority: 100, threshold: 0.65,
+     decision: {type: "choice", instructions: "Which of these situations applies to the customer's LATEST message?",
+           criteria: {complaint: "The customer is angry or complains.", none: "None of the above."}}, ui: {x: 0, y: 0}},
+    {id: "h", type: "tool", tool: "", ui: {x: 260, y: 0}},
+    {id: "hold", type: "emit", template: "", position: "replace", ui: {x: 500, y: -40}},
+    {id: "p", type: "set", assign: {"state.handover_active": "True"}, ui: {x: 740, y: -40}},
+    {id: "x", type: "end", status: "handover", ui: {x: 980, y: 0}}],
+    edges: [{from: "t.complaint", to: "h"}, {from: "h.ok", to: "hold"}, {from: "h.error", to: "x"}, {from: "h.timeout", to: "x"},
+            {from: "hold.next", to: "p"}, {from: "p.next", to: "x"}]}),
+};
+function addJourneyDialog(scope) {
+  modal(`<h3>New journey (${scope === "turn" ? "whole turn" : "per message part"})</h3>
+    <p class="help">Start from a template; then fill in the empty fields (templates, tools) on the canvas.</p>
+    <div class="grid2">
+      <button class="btn" onclick="addJourney('blank','${scope}')">Blank (trigger → end)</button>
+      <button class="btn" onclick="addJourney('lead','${scope}')">Lead capture</button>
+      <button class="btn" onclick="addJourney('human','${scope}')">Human handover</button>
+      <button class="btn" onclick="addJourney('takeover','${scope}')">Immediate handover</button>
+    </div><p><button class="btn" onclick="closeModal()">Cancel</button></p>`);
+}
+function addJourney(kind, scope) {
+  const j = JTEMPLATES[kind](scope);
+  if (kind === "blank") trig(j).scope = scope;
+  j.id = uniqueId(kind === "blank" ? "journey" : kind, new Set(H.journeys.map(x => x.id)));
+  j.enabled = true;
+  H.journeys.push(j); curJ = j; closeModal(); markDirty(); renderJourneys();
+}
+
+// ======================================================================== canvas (Drawflow adapter: our schema <-> drawflow)
+const OFF = {x: 80, y: 260}, SC = {x: 1.3, y: 1.3};  // config coordinates are compact; the canvas spreads them
+function ports(n) {
+  const jq = n.decision || {};
+  if ((n.type === "trigger" || n.type === "decision") && jq.type === "choice")
+    return Object.keys(jq.criteria || {}).filter(k => k !== "none").concat(n.type === "decision" ? ["unsure"] : []);
+  return (CATALOG[n.type] || {}).ports || [];
+}
+function summary(n) {
+  switch (n.type) {
+    case "trigger": return `${n.scope || "part"} · ${n.mode || "tap"}${n.when ? " · when " + n.when : ""} — ${(n.decision || {}).instructions || "(no question)"}`;
+    case "condition": return n.expr || "(no expression)";
+    case "decision": return (n.decision || {}).instructions || "(no question)";
+    case "extract": return `${(n.slots || []).join(", ") || "(no slots)"} from ${n.source || "conversation"}`;
+    case "tool": return (n.tool || "(no tool)") + (n.save_as ? " → " + n.save_as : "");
+    case "ask": return `${n.template || "(no template)"} · needs ${(n.require || []).join(", ")}`;
+    case "set": return Object.entries(n.assign || {}).map(([k, v]) => `${k} = ${v}`).join("; ") || "(nothing)";
+    case "emit": return n.template || "(no template)";
+    case "end": return "status: " + (n.status || "done");
+  }
+  return "";
+}
+function cardHtml(n) {
+  return `<div class="card t-${n.type}" data-node="${esc(n.id)}"><div class="ct">${esc((CATALOG[n.type] || {}).label || n.type)}<span class="ebadge">!</span><span class="steps"></span></div>
+    <div class="cid">${esc(n.id)}</div><div class="cs">${esc(summary(n))}</div>
+    ${n.type === "emit" ? `<div class="out">→ ● output collector · ${esc(n.position || "body")}</div>` : ""}
+    ${n.type === "ask" ? `<div class="out">→ ● output (ask) · waits for reply</div>` : ""}</div>`;
+}
+function initEditor() {
+  if (editor) return;
+  editor = new Drawflow($("#drawflow"));
+  editor.reroute = false; editor.force_first_input = false;
+  editor.start();
+  editor.on("connectionCreated", c => { if (loading) return; onConnect(c); });
+  editor.on("connectionRemoved", c => { if (loading) return; onDisconnect(c); });
+  editor.on("nodeMoved", id => { const n = DFR[id]; if (!n) return; const d = editor.getNodeFromId(id); n.ui = {x: Math.round((d.pos_x - OFF.x) / SC.x), y: Math.round((d.pos_y - OFF.y) / SC.y)}; DIRTY = true; status(); });
+  editor.on("nodeSelected", id => { selNode = DFR[id] || null; renderInspector(); });
+  editor.on("nodeUnselected", () => { selNode = null; renderInspector(); });
+  editor.on("nodeRemoved", id => { if (loading) return; const n = DFR[id]; if (!n) return; removeNode(n, false); });
+}
+function autoLayout(j) {  // nodes without ui positions: layered by distance from the trigger
+  const depth = {}, t = trig(j); if (!t.id) return;
+  depth[t.id] = 0; const q = [t.id];
+  while (q.length) { const a = q.shift(); for (const e of j.edges || []) if (e.from.split(".")[0] === a && depth[e.to] === undefined) { depth[e.to] = depth[a] + 1; q.push(e.to); } }
+  const col = {};
+  for (const n of j.nodes) if (!n.ui) { const d = depth[n.id] ?? 0; col[d] = (col[d] || 0) + 1; n.ui = {x: d * 250, y: (col[d] - 1) * 140}; }
+}
+function renderCanvas() {
+  if (!editor) return;
+  loading = true; editor.clear(); DF = {}; DFR = {};
+  if (!curJ) { loading = false; renderInspector(); return; }
+  autoLayout(curJ);
+  for (const n of curJ.nodes) {
+    const ps = ports(n);
+    const id = editor.addNode(n.type, n.type === "trigger" ? 0 : 1, ps.length, (n.ui?.x ?? 0) * SC.x + OFF.x, (n.ui?.y ?? 0) * SC.y + OFF.y, "n-" + n.type, {id: n.id}, cardHtml(n));
+    DF[n.id] = id; DFR[id] = n;
+    const el = document.getElementById("node-" + id);
+    el.style.minHeight = Math.max(70, ps.length * 27 + 16) + "px";  // room for every output port
+    ps.forEach((p, i) => { const o = el.querySelector(".outputs .output_" + (i + 1)); if (o) { o.setAttribute("data-port", ps.length > 1 || p !== "next" ? p : ""); o.title = p; } });
+  }
+  for (const e of curJ.edges || []) {
+    const [src, port] = splitFrom(e.from), s = curJ.nodes.find(n => n.id === src);
+    const k = s ? ports(s).indexOf(port) : -1;
+    if (k >= 0 && DF[e.to] !== undefined) editor.addConnection(DF[src], DF[e.to], "output_" + (k + 1), "input_1");
+  }
+  loading = false; paintErrors(); renderInspector();
+  if (fittedFor !== curJ) { fittedFor = curJ; fitView(); }
+  if (lastPaths[curJ.id]) paintPath(lastPaths[curJ.id]);
+}
+let fittedFor = null;
+function setView(z, x, y) {
+  editor.zoom = z; editor.zoom_last_value = z; editor.canvas_x = x; editor.canvas_y = y;
+  editor.precanvas.style.transform = `translate(${x}px, ${y}px) scale(${z})`;
+}
+function fitView() {  // whole journey in view (Drawflow scales around the canvas centre, so compensate for it)
+  if (!curJ || !curJ.nodes.length) return;
+  const r = $("#drawflow").getBoundingClientRect(); if (!r.width) return;
+  const xs = curJ.nodes.map(n => (n.ui?.x ?? 0) * SC.x + OFF.x), ys = curJ.nodes.map(n => (n.ui?.y ?? 0) * SC.y + OFF.y);
+  const x0 = Math.min(...xs) - 30, x1 = Math.max(...xs) + 300, y0 = Math.min(...ys) - 30, y1 = Math.max(...ys) + 200;
+  const z = Math.max(0.55, Math.min(1, r.width / (x1 - x0), r.height / (y1 - y0)));
+  const pw = editor.precanvas.clientWidth, ph = editor.precanvas.clientHeight;
+  setView(z, -x0 * z - pw / 2 * (1 - z) + Math.max(0, (r.width - (x1 - x0) * z) / 2), -y0 * z - ph / 2 * (1 - z) + Math.max(0, (r.height - (y1 - y0) * z) / 2));
+}
+function splitFrom(f) { const i = f.indexOf("."); return [f.slice(0, i), f.slice(i + 1)]; }
+function onConnect(c) {
+  const s = DFR[c.output_id], t = DFR[c.input_id]; if (!s || !t) return;
+  const port = ports(s)[Number(c.output_class.split("_")[1]) - 1];
+  const from = `${s.id}.${port}`;
+  const old = (curJ.edges || []).find(e => e.from === from && e.to !== t.id);
+  curJ.edges = (curJ.edges || []).filter(e => e.from !== from);
+  curJ.edges.push({from, to: t.id});
+  if (old && DF[old.to] !== undefined) { loading = true; editor.removeSingleConnection(c.output_id, DF[old.to], c.output_class, "input_1"); loading = false; }
+  markDirty();
+}
+function onDisconnect(c) {
+  const s = DFR[c.output_id], t = DFR[c.input_id]; if (!s || !t) return;
+  const port = ports(s)[Number(c.output_class.split("_")[1]) - 1];
+  curJ.edges = (curJ.edges || []).filter(e => !(e.from === `${s.id}.${port}` && e.to === t.id));
+  markDirty();
+}
+function renderPalette() {
+  $("#palette").innerHTML = (curJ ? `<b class="small">${esc(curJ.title || curJ.id)}</b><span class="muted small">add card:</span>` +
+    Object.entries(CATALOG).filter(([k]) => k !== "trigger").map(([k, c]) => `<button class="btn sm" title="${esc(c.help)}" onclick="addNode('${k}')">${esc(c.label)}</button>`).join("")
+    + `<span class="spacer"></span><button class="btn sm" onclick="editor.zoom_out()">−</button><button class="btn sm" onclick="editor.zoom_in()">+</button>
+     <button class="btn sm" onclick="fitView()">Fit</button><button class="btn sm" onclick="clearPath()">Clear test path</button>` : `<span class="muted small">No journey selected</span>`);
+}
+function addNode(type) {
+  const ids = new Set(curJ.nodes.map(n => n.id));
+  const n = {id: uniqueId(type, ids), type};
+  ({condition: () => n.expr = "", decision: () => (n.decision = {type: "noul", instructions: "", criteria: {true: "", false: ""}}, n.threshold = 0.5),
+    extract: () => (n.slots = [], n.require = [], n.source = "conversation", n.instructions = ""), tool: () => n.tool = "",
+    ask: () => (n.require = [], n.template = ""), set: () => n.assign = {}, emit: () => (n.template = "", n.position = "body"),
+    end: () => n.status = "done"})[type]?.();
+  const z = editor.zoom || 1, r = $("#drawflow").getBoundingClientRect();
+  n.ui = {x: Math.round(((r.width / 2 - editor.canvas_x) / z - OFF.x - 90) / SC.x), y: Math.round(((r.height / 2 - editor.canvas_y) / z - OFF.y - 40) / SC.y)};
+  curJ.nodes.push(n); selNode = n; markDirty(); renderCanvas();
+  const id = DF[n.id]; document.getElementById("node-" + id)?.classList.add("selected");
+}
+function removeNode(n, fromInspector) {
+  if (n.type === "trigger") { toast("A journey needs its trigger", true); renderCanvas(); return; }
+  curJ.nodes = curJ.nodes.filter(x => x !== n);
+  curJ.edges = (curJ.edges || []).filter(e => splitFrom(e.from)[0] !== n.id && e.to !== n.id);
+  selNode = null; markDirty(); if (fromInspector) renderCanvas(); else renderInspector();
+}
+function renameNode(n, nid) {
+  nid = nid.trim().replace(/[^A-Za-z0-9_]/g, "_");
+  if (!nid || nid === n.id) return;
+  if (curJ.nodes.some(x => x.id === nid)) return toast("That id is taken", true);
+  for (const e of curJ.edges || []) { const [s, p] = splitFrom(e.from); if (s === n.id) e.from = nid + "." + p; if (e.to === n.id) e.to = nid; }
+  n.id = nid; markDirty(true);
+}
+function paintErrors() {
+  document.querySelectorAll(".card.haserr").forEach(c => c.classList.remove("haserr"));
+  if (!curJ) return;
+  for (const e of ERRS) if (e.journey === curJ.id && e.node && DF[e.node] !== undefined)
+    document.querySelector(`#node-${DF[e.node]} .card`)?.classList.add("haserr");
+}
+function paintPath(path) {
+  clearPath(true);
+  const steps = {};
+  path.forEach((s, i) => { (steps[s.node] = steps[s.node] || []).push(i + 1); });
+  for (const [nid, nums] of Object.entries(steps)) {
+    const el = document.getElementById("node-" + DF[nid]); if (!el) continue;
+    el.classList.add("visited"); el.querySelector(".steps").textContent = nums.join(",");
+  }
+  for (let i = 0; i < path.length - 1; i++) {
+    const s = curJ.nodes.find(n => n.id === path[i].node); if (!s || !path[i].port) continue;
+    const k = ports(s).indexOf(path[i].port); if (k < 0) continue;
+    document.querySelector(`.connection.node_out_node-${DF[path[i].node]}.node_in_node-${DF[path[i + 1].node]}.output_${k + 1}`)?.classList.add("taken");
+  }
+}
+function clearPath(keep) {
+  document.querySelectorAll(".drawflow-node.visited").forEach(e => e.classList.remove("visited"));
+  document.querySelectorAll(".connection.taken").forEach(e => e.classList.remove("taken"));
+  if (!keep && curJ) delete lastPaths[curJ.id];
+}
+
+// ======================================================================== inspector
+function decisionEditor(n) {
+  n.decision = n.decision || {type: "noul", instructions: "", criteria: {}};
+  const q = n.decision; q.criteria = q.criteria || {};
+  let h = inp(q, "type", {label: "Question type", options: [["noul", "yes / no"], ["choice", "choice (one port per option)"]], canvas: true,
+                          onchange: v => { if (v === "noul") q.criteria = {true: q.criteria.true || "", false: q.criteria.false || ""}; renderInspector(); }})
+        + inp(q, "instructions", {label: "Question for the decision model", type: "textarea", keepEmpty: true, canvas: true});
+  if (q.type === "choice") {
+    h += `<label class="f">Options (each becomes an output port; 'none' = no port)</label>` + Object.keys(q.criteria).map(k =>
+      `<div class="row" style="margin-bottom:4px"><input type="text" value="${esc(k)}" style="flex:0 0 90px" class="mono" onchange="renameOption(this.value,'${esc(k)}')">
+       <input type="text" value="${esc(q.criteria[k])}" oninput="selNode.decision.criteria['${esc(k)}']=this.value;markDirty()">
+       <button class="btn sm danger" onclick="delOption('${esc(k)}')">×</button></div>`).join("")
+      + `<button class="btn sm" onclick="addOption()">+ option</button>`;
+  } else {
+    h += inp(q.criteria, "true", {label: "Means YES when…", type: "textarea", rows: 2}) + inp(q.criteria, "false", {label: "Means NO when…", type: "textarea", rows: 2});
+  }
+  return h;
+}
+function renameOption(nv, old) {
+  const q = selNode.decision; nv = nv.trim().replace(/[^A-Za-z0-9_]/g, "_"); if (!nv || nv === old || q.criteria[nv] !== undefined) return renderInspector();
+  const c = {}; for (const [k, v] of Object.entries(q.criteria)) c[k === old ? nv : k] = v; q.criteria = c;
+  for (const e of curJ.edges) if (e.from === `${selNode.id}.${old}`) e.from = `${selNode.id}.${nv}`;
+  markDirty(true);
+}
+function delOption(k) { const q = selNode.decision; delete q.criteria[k]; curJ.edges = curJ.edges.filter(e => e.from !== `${selNode.id}.${k}`); markDirty(true); }
+function addOption() { const q = selNode.decision; q.criteria[uniqueId("option", new Set(Object.keys(q.criteria)))] = ""; markDirty(true); }
+function multi(n, key, values, label) {
+  n[key] = n[key] || [];
+  return `<label class="f">${esc(label)}</label><div class="small">` + values.map(v =>
+    `<label style="margin-right:10px;white-space:nowrap"><input type="checkbox" ${n[key].includes(v) ? "checked" : ""}
+      onchange="toggleIn(selNode,'${key}','${esc(v)}',this.checked)"> ${esc(v)}</label>`).join("") + `</div>`;
+}
+function toggleIn(o, key, v, on) { o[key] = (o[key] || []).filter(x => x !== v); if (on) o[key].push(v); markDirty(true); }
+function renderInspector() {
+  const box = $("#inspector");
+  if (!curJ) { box.innerHTML = `<p class="muted">Create a journey with “+” on the main path.</p>`; return; }
+  const n = selNode && curJ.nodes.includes(selNode) ? selNode : null;
+  const errs = ERRS.filter(e => e.journey === curJ.id && (n ? e.node === n.id : !e.node));
+  const errHtml = errs.length ? `<div class="errs">${errs.map(e => esc(e.msg)).join("<br>")}</div>` : "";
+  if (!n) {
+    box.innerHTML = `<h3>Journey</h3>${errHtml}` +
+      `<label class="f">Id</label><input type="text" class="mono" value="${esc(curJ.id)}" onchange="renameJourney(this.value)">` +
+      inp(curJ, "title", {label: "Title", keepEmpty: true, onchange: () => { renderJList(); renderMainPath(); }}) +
+      inp(curJ, "enabled", {type: "checkbox", label: "Enabled", dflt: true, onchange: () => { renderJList(); renderMainPath(); }}) +
+      `<p class="help">Select a card to edit it. Drag from an output dot to a card's input to connect; one arrow per output.
+       Output cards and asks feed the <b>output collector</b>, which composes the final reply with the knowledge answer.</p>
+       <div class="row"><button class="btn sm" onclick="dupJourney()">Duplicate</button><button class="btn sm danger" onclick="delJourney()">Delete journey</button></div>`;
+    return;
+  }
+  const c = CATALOG[n.type] || {};
+  let h = `<h3>${esc(c.label || n.type)}</h3><p class="help">${esc(c.help || "")}</p>${errHtml}
+    <label class="f">Card id</label><input type="text" class="mono" value="${esc(n.id)}" onchange="renameNode(selNode,this.value)">`;
+  switch (n.type) {
+    case "trigger":
+      h += inp(n, "scope", {label: "Scope", options: [["part", "part (each part of the message)"], ["turn", "turn (the whole message)"]], canvas: true, onchange: renderMainPath})
+        + inp(n, "mode", {label: "Mode", options: [["tap", "tap (alongside the knowledge answer)"], ["exclusive", "exclusive (takes over its part)"]], canvas: true})
+        + inp(n, "takeover", {label: "Takeover", options: [["", "no"], ["turn", "turn (the whole reply)"]], canvas: true})
+        + `<div class="row"><div>${inp(n, "priority", {label: "Priority", type: "number"})}</div><div>${inp(n, "threshold", {label: "Threshold", type: "number", step: "0.05"})}</div></div>`
+        + inp(n, "when", {label: "Only when (code expression, optional)", mono: true, ph: "has(turn.phone_in_message)", canvas: true})
+        + decisionEditor(n); break;
+    case "condition": h += inp(n, "expr", {label: "Expression", mono: true, keepEmpty: true, canvas: true, ph: "has(slots.name) and valid(slots.phone, 'phone')"})
+        + `<p class="help">Roots: slots, vars, state, trigger, turn, contacts. Functions: has(), valid(x,'validator'), len(), lower().</p>`; break;
+    case "decision": h += decisionEditor(n) + inp(n, "threshold", {label: "Threshold", type: "number", step: "0.05"}); break;
+    case "extract": h += multi(n, "slots", Object.keys(H.slots), "Slots to fill") + multi(n, "require", Object.keys(H.slots), "Required (else 'partial')")
+        + inp(n, "source", {label: "Read from", options: [["conversation", "the whole conversation"], ["message", "the latest message"]], canvas: true})
+        + inp(n, "instructions", {label: "Extra instructions", type: "textarea"}); break;
+    case "tool": h += inp(n, "tool", {label: "Tool", options: toolOptions(), canvas: true}) + inp(n, "save_as", {label: "Save result as", mono: true, ph: "vars.result", canvas: true}); break;
+    case "ask": h += multi(n, "require", Object.keys(H.slots), "Waits for") + inp(n, "template", {label: "Ask with template", options: tplOptions(), canvas: true})
+        + `<p class="help">Port <b>resume</b>: the customer replied. Port <b>gave_up</b>: no answer after ${H.settings.ask_timeout_turns ?? 3} turns or 2 tries.</p>`; break;
+    case "set":
+      n.assign = n.assign || {};
+      h += `<label class="f">Assignments (key = expression)</label>` + Object.entries(n.assign).map(([k, v]) =>
+        `<div class="row" style="margin-bottom:4px"><input type="text" class="mono" value="${esc(k)}" onchange="renameAssign('${esc(k)}',this.value)">
+         <input type="text" class="mono" value="${esc(v)}" oninput="selNode.assign['${esc(k)}']=this.value;markDirty()" onchange="renderCanvas()">
+         <button class="btn sm danger" onclick="delete selNode.assign['${esc(k)}'];markDirty(true)">×</button></div>`).join("")
+        + `<button class="btn sm" onclick="selNode.assign[uniqueId('vars.x',new Set(Object.keys(selNode.assign)))]='';markDirty(true)">+ assignment</button>
+           <p class="help">Keys: state.x (kept for the session), vars.x (this turn), slots.x. Values are expressions: 'text', True, slots.phone…</p>`; break;
+    case "emit": h += inp(n, "template", {label: "Approved template", options: tplOptions(), canvas: true})
+        + inp(n, "position", {label: "Position in the reply", options: [["before", "before (prefix)"], ["body", "body (after the answer)"], ["replace", "replace (instead of the answer)"], ["suffix", "suffix (at the end)"]], canvas: true})
+        + (n.template && H.templates[n.template] ? `<pre>${esc(H.templates[n.template].text[LANGS[0]] || "")}</pre>` : ""); break;
+    case "end": h += inp(n, "status", {label: "Status", options: ["done", "handover", "abandoned", "error"], canvas: true}); break;
+  }
+  if (n.type !== "trigger") h += `<p style="margin-top:14px"><button class="btn sm danger" onclick="removeNode(selNode,true)">Delete card</button></p>`;
+  box.innerHTML = h;
+}
+function renameAssign(old, nv) { nv = nv.trim(); if (!nv || nv === old) return; const a = {}; for (const [k, v] of Object.entries(selNode.assign)) a[k === old ? nv : k] = v; selNode.assign = a; markDirty(true); }
+function renameJourney(v) { v = v.trim().replace(/[^A-Za-z0-9_]/g, "_"); if (!v || H.journeys.some(j => j.id === v && j !== curJ)) return toast("Invalid or taken id", true); curJ.id = v; markDirty(); renderJList(); renderMainPath(); }
+function dupJourney() { const j = clone(curJ); j.id = uniqueId(curJ.id + "_copy", new Set(H.journeys.map(x => x.id))); j.title = (j.title || "") + " (copy)"; j.enabled = false; H.journeys.push(j); curJ = j; markDirty(); renderJourneys(); }
+function delJourney() { if (!confirm(`Delete journey '${curJ.id}'?`)) return; H.journeys = H.journeys.filter(j => j !== curJ); curJ = null; markDirty(); renderJourneys(); }
+
+// ======================================================================== policies
+function renderPolicies() {
+  const v = $("#v-policies");
+  v.innerHTML = `<div class="row" style="margin-bottom:10px"><h2 style="margin:0;font-size:16px">Policies</h2><span class="spacer"></span>
+    <button class="btn" onclick="addPolicy()">+ New policy</button></div>
+    <p class="help">A policy is a condition (a question for the decision model) plus an action: an approved template, or an instruction injected into the answer prompt.
+    Turn policies look at the whole message; part policies at each part. Exclusive template policies replace the answer.</p>` +
+    H.policies.map((p, i) => { p.trigger = p.trigger || {instructions: "", criteria: {}}; p.trigger.criteria = p.trigger.criteria || {}; p.action = p.action || {type: "template"};
+      const errs = ERRS.filter(e => e.policy === p.id);
+      return `<div class="card2"><h3><input type="text" class="mono" style="width:220px" value="${esc(p.id)}" onchange="renamePolicy(${i},this.value)">
+        ${inp(p, "enabled", {type: "checkbox", label: "enabled", dflt: true}).replace('<label class="f">', '<label class="small">')}<span class="spacer"></span>
+        <button class="btn sm danger" onclick="H.policies.splice(${i},1);markDirty();renderPolicies()">Delete</button></h3>
+        ${errs.length ? `<div class="errs">${errs.map(e => esc(e.msg)).join("<br>")}</div>` : ""}
+        <div class="grid2"><div>
+          ${inp(p.trigger, "instructions", {label: "When (question for the decision model)", type: "textarea", keepEmpty: true})}
+          ${inp(p.trigger.criteria, "true", {label: "Means YES when…", type: "textarea", rows: 2})}
+          ${inp(p.trigger.criteria, "false", {label: "Means NO when…", type: "textarea", rows: 2})}
+          <div class="grid3">${inp(p, "scope", {label: "Scope", options: ["part", "turn"]})}${inp(p, "priority", {label: "Priority", type: "number"})}${inp(p, "threshold", {label: "Threshold", type: "number", step: "0.05"})}</div>
+        </div><div>
+          ${inp(p.action, "type", {label: "Action", options: [["template", "send an approved template"], ["inject", "add an instruction to the answer"]], onchange: renderPolicies})}
+          ${p.action.type === "inject" ? inp(p.action, "text", {label: "Instruction", type: "textarea", rows: 4}) :
+            inp(p.action, "template", {label: "Template", options: tplOptions()}) +
+            inp(p.action, "position", {label: "Position", options: [["", "body (default)"], "before", "body", "suffix"]}) +
+            inp(p.action, "exclusive", {type: "checkbox", label: "exclusive: only this template, no knowledge answer"}) +
+            inp(p.action, "suppress_kb", {type: "checkbox", label: "suppress the knowledge answer for this part"})}
+          ${inp(p.action, "no_ask", {type: "checkbox", label: "don't ask for the phone number after it"})}
+        </div></div></div>`; }).join("");
+}
+function addPolicy() { H.policies.push({id: uniqueId("policy", new Set(H.policies.map(p => p.id))), enabled: true, scope: "part", priority: 5, threshold: 0.65,
+  trigger: {instructions: "", criteria: {true: "", false: ""}}, action: {type: "template", template: ""}}); markDirty(); renderPolicies(); }
+function renamePolicy(i, v) { v = v.trim().replace(/[^A-Za-z0-9_]/g, "_"); if (v) { H.policies[i].id = v; markDirty(); } }
+
+// ======================================================================== rules (+ flow, channels, settings)
+function renderRules() {
+  const r = H.rules; r.voice = r.voice || []; r.forbidden_phrases = r.forbidden_phrases || []; r.required_wording = r.required_wording || [];
+  r.claims_without_receipt = r.claims_without_receipt || {phrases: [], receipt_tools: []};
+  const s = H.settings, f = H.flow; f.welcome = f.welcome || {}; f.ask_contact = f.ask_contact || {}; f.thank_you = f.thank_you || {};
+  $("#v-rules").innerHTML = `<div class="grid2"><div>
+    <div class="card2"><h3>Voice (always-on, in the answer prompt)</h3>${inp(r, "voice", {list: "lines", rows: 8, label: "One rule per line"})}
+      ${inp(r, "no_emoji", {type: "checkbox", label: "Strip emoji from every reply (code)"})}</div>
+    <div class="card2"><h3>Forbidden phrases <span class="muted small">checked in code; replaced if the rewrite fails</span></h3>
+      <table><tr><th>Phrase</th><th>Replace with</th><th></th></tr>${r.forbidden_phrases.map((x, i) => `<tr><td>${inp(x, "phrase", {keepEmpty: true})}</td><td>${inp(x, "replace", {keepEmpty: true})}</td>
+        <td><button class="btn sm danger" onclick="H.rules.forbidden_phrases.splice(${i},1);markDirty();renderRules()">×</button></td></tr>`).join("")}</table>
+      <button class="btn sm" onclick="H.rules.forbidden_phrases.push({phrase:'',replace:''});markDirty();renderRules()">+ phrase</button></div>
+    <div class="card2"><h3>No claims without a receipt</h3><p class="help">If the reply says one of these, a listed tool must have run successfully this turn.</p>
+      ${inp(r.claims_without_receipt, "phrases", {list: ",", label: "Phrases (comma separated)"})}
+      ${inp(r.claims_without_receipt, "receipt_tools", {list: ",", label: "Tools that allow them"})}</div>
+  </div><div>
+    <div class="card2"><h3>Required wording</h3><p class="help">An instruction for the answer, a code check per language, and the text inserted if it is still missing.</p>
+      ${r.required_wording.map((w, i) => { w.check = w.check || {}; w.insert = w.insert || {};
+        return `<div style="border-top:1px solid var(--line);padding-top:6px;margin-top:6px"><div class="row"><b class="mono">${esc(w.id)}</b><span class="spacer"></span>
+        <button class="btn sm danger" onclick="H.rules.required_wording.splice(${i},1);markDirty();renderRules()">×</button></div>
+        ${inp(w, "instruction", {label: "Instruction", type: "textarea", rows: 2})}
+        <div class="grid2">${inp(w, "when_regex", {label: "Applies when the reply matches (regex)", mono: true})}${inp(w, "when_mentions_entity_types", {list: ",", label: "…or mentions entities of type"})}</div>
+        <div class="grid2">${(H.settings.languages || LANGS).map(l => inp(w.check, l, {label: `Check ${l.toUpperCase()} (regex)`, mono: true})).join("")}</div>
+        <div class="grid2">${(H.settings.languages || LANGS).map(l => inp(w.insert, l, {label: `Insert ${l.toUpperCase()}`})).join("")}</div></div>`; }).join("")}
+      <button class="btn sm" onclick="H.rules.required_wording.push({id:uniqueId('wording',new Set(H.rules.required_wording.map(w=>w.id))),instruction:'',check:{},insert:{}});markDirty();renderRules()">+ wording rule</button></div>
+    <div class="card2"><h3>Conversation flow</h3>
+      <div class="grid2">${inp(f.welcome, "template", {label: "Welcome (first inbox reply)", options: tplOptions()})}${inp(f.thank_you, "template", {label: "Thank you", options: tplOptions()})}
+      ${inp(f.ask_contact, "template", {label: "Ask for the contact (after details)", options: tplOptions()})}${inp(f.ask_contact, "template_when_unanswered", {label: "…when we could not answer", options: tplOptions()})}
+      ${channelsEditor()}${inp(s, "paused_template", {label: "While handed over (bot paused)", options: tplOptions()})}</div>
+      <div class="grid3">${inp(s, "max_asks", {label: "Max number asks", type: "number"})}${inp(s, "ask_timeout_turns", {label: "Ask timeout (turns)", type: "number"})}
+      ${inp(s, "languages", {list: ",", label: "Languages"})}</div>
+      ${inp(s, "agents_default_online", {type: "checkbox", label: "Human agents online by default"})}</div>
+  </div></div>`;
+}
+
+function channelsEditor() {
+  const rows = Object.entries(H.channels).map(([name, ch]) => `<div class="row" style="margin-bottom:4px"><span class="mono" style="flex:0 0 90px">${esc(name)}</span>
+    ${inp(ch, "mode", {options: [["full", "full answers"], ["template_only", "template only"]], onchange: renderRules})}
+    ${ch.mode === "template_only" ? inp(ch, "template", {options: tplOptions()}) : ""}
+    <button class="btn sm danger" onclick="delete H.channels['${esc(name)}'];markDirty();renderRules()">×</button></div>`).join("");
+  return `<div><label class="f">Channels (Message.channel names)</label>${rows}
+    <button class="btn sm" onclick="addChannel()">+ channel</button></div>`;
+}
+function addChannel() {
+  const name = (prompt("Channel name (as your integration sends it, e.g. dm, comment, whatsapp):", "") || "").trim();
+  if (!name || H.channels[name]) return;
+  H.channels[name] = {mode: "full"}; markDirty(); renderRules();
+}
+
+// ======================================================================== templates
+let tplFilter = "all", tplSearch = "";
+const isApproved = (t, lg) => t.approved === undefined ? true : typeof t.approved === "object" ? t.approved[lg] !== false : !!t.approved;
+function usage(tid) {
+  const u = [];
+  for (const j of H.journeys) for (const n of j.nodes) if (n.template === tid) u.push(`${j.id}.${n.id}`);
+  for (const p of H.policies) if ((p.action || {}).template === tid) u.push("policy " + p.id);
+  for (const [k, v] of Object.entries(H.flow)) if (v && Object.values(v).includes(tid)) u.push("flow " + k);
+  if (H.channels.comment?.template === tid) u.push("comment channel"); if (H.settings.paused_template === tid) u.push("paused");
+  return u;
+}
+function renderTemplates() {
+  const langs = H.settings.languages || LANGS;
+  const ids = Object.keys(H.templates).sort().filter(id => {
+    const t = H.templates[id];
+    if (tplFilter === "review" && langs.every(lg => isApproved(t, lg))) return false;
+    return !tplSearch || (id + " " + langs.map(l => (t.text || {})[l] || "").join(" ")).toLowerCase().includes(tplSearch.toLowerCase());
+  });
+  const nReview = Object.values(H.templates).filter(t => langs.some(lg => !isApproved(t, lg))).length;
+  $("#v-templates").innerHTML = `<div class="row" style="margin-bottom:10px;flex-wrap:wrap"><h2 style="margin:0;font-size:16px;flex:0 0 auto">Approved templates</h2>
+    <select style="width:auto" onchange="tplFilter=this.value;renderTemplates()"><option value="all">All (${Object.keys(H.templates).length})</option>
+      <option value="review" ${tplFilter === "review" ? "selected" : ""}>Needs review (${nReview})</option></select>
+    <input type="text" placeholder="Search…" value="${esc(tplSearch)}" oninput="tplSearch=this.value;clearTimeout(window._ts);window._ts=setTimeout(renderTemplates,300)" style="max-width:260px">
+    <span class="spacer"></span><button class="btn" onclick="addTemplate()">+ New template</button></div>
+    <p class="help">Templates are sent <b>verbatim</b> (placeholders like {{slots.name}} are filled in). Untick “approved” for text the client has not signed off; it still works, but shows here for review.</p>` +
+    ids.map(id => { const t = H.templates[id], u = usage(id);
+      return `<div class="card2"><h3><span class="mono">${esc(id)}</span>${langs.map(lg => `<span class="pill ${isApproved(t, lg) ? "ok" : "warn"}">${lg} ${isApproved(t, lg) ? "approved" : "needs review"}</span>`).join("")}
+        <span class="spacer"></span><span class="muted small">${u.length ? "used by " + esc(u.join(", ")) : "unused"}</span>
+        <button class="btn sm danger" onclick="delTemplate('${esc(id)}')">Delete</button></h3>
+        ${t.source ? `<p class="help">Source: ${esc(t.source)}</p>` : ""}
+        <div class="grid2">${langs.map(lg => `<div>${inp(t.text, lg, {label: lg.toUpperCase(), type: "textarea", rows: 4, keepEmpty: true})}
+          <label class="small"><input type="checkbox" ${isApproved(t, lg) ? "checked" : ""} onchange="setApproved('${esc(id)}','${lg}',this.checked)"> approved by the client</label></div>`).join("")}</div>
+        <div class="grid3">${inp(t, "requires_receipt", {label: "Only after tool succeeded", options: toolOptions()})}
+          ${inp(t, "covers", {list: ",", label: "Makes these redundant (ids)"})}${inp(t, "counts_as_ask", {label: "Counts as asking for", options: ["", ...Object.keys(H.slots)]})}</div></div>`; }).join("");
+}
+function setApproved(id, lg, on) {
+  const t = H.templates[id], langs = H.settings.languages || ["en"];
+  const a = typeof t.approved === "object" ? t.approved : Object.fromEntries(langs.map(l => [l, isApproved(t, l)]));
+  a[lg] = on; t.approved = a;
+  if (langs.every(l => a[l] !== false)) delete t.approved;
+  markDirty(); renderTemplates();
+}
+function addTemplate() {
+  const id = (prompt("Template id (letters, digits, _):", "") || "").trim().replace(/[^A-Za-z0-9_]/g, "_");
+  if (!id) return; if (H.templates[id]) return toast("That id exists", true);
+  H.templates[id] = {text: Object.fromEntries((H.settings.languages || LANGS).map(l => [l, ""]))}; H.templates[id].approved = Object.fromEntries((H.settings.languages || ["en"]).map(l => [l, false]));
+  tplSearch = id; markDirty(); renderTemplates();
+}
+function delTemplate(id) { const u = usage(id); if (u.length && !confirm(`'${id}' is used by ${u.join(", ")}. Delete anyway?`)) return; delete H.templates[id]; markDirty(); renderTemplates(); }
+
+// ======================================================================== prompt & profile
+async function renderPrompt() {
+  const p = H.profile;
+  $("#v-prompt").innerHTML = `<div class="grid2"><div>
+    <div class="card2"><h3>Assistant profile</h3><p class="help">Who the assistant is; added to the top of every answer prompt.</p>
+      ${PROFILE_FIELDS.map(([k, l]) => inp(p, k, {label: l, type: "textarea", rows: k === "name" ? 1 : 3})).join("")}</div>
+    <div class="card2"><h3>Extra instructions for the answer</h3>${inp(H.prompts, "answer_extra", {type: "textarea", rows: 4, label: "Added to the client rules block"})}</div>
+  </div><div>
+    <div class="card2"><h3>Assembled answer prompt <button class="btn sm" onclick="previewPrompt()">Refresh preview</button></h3>
+      <p class="help">Preview of the <b>saved draft</b> (save first to see edits). The core block is fixed in code: grounding, citations, numbers, APPROVED over other sources.</p>
+      <div id="pprev" class="muted small">…</div></div>
+  </div></div>`;
+  previewPrompt();
+}
+async function previewPrompt() {
+  try {
+    const r = await api(API + "/prompt?draft=1");
+    $("#pprev").innerHTML = `<b class="small">1. Profile (editable)</b><pre>${esc(r.profile)}</pre><b class="small">2. Client rules (editable: Rules tab)</b><pre>${esc(r.client_rules || "(none)")}</pre>
+      <b class="small">3. Core (locked)</b><pre>${esc(r.core)}</pre><details><summary class="small">Other locked prompts (conversation rewrite, questions about the assistant)</summary>
+      <pre>${esc(r.core_condense)}</pre><pre>${esc(r.core_meta)}</pre></details>`;
+  } catch (e) { $("#pprev").textContent = e.message; }
+}
+
+// ======================================================================== slots, tools, contacts, validators
+function jsonBox(key, label, help) {
+  const id = "j_" + key;
+  setTimeout(() => { const e = document.getElementById(id); e && e.addEventListener("input", () => {
+    try { H[key] = JSON.parse(e.value); e.style.borderColor = ""; markDirty(); } catch { e.style.borderColor = "var(--bad)"; } }); });
+  return `<div class="card2"><h3>${esc(label)}</h3><p class="help">${help}</p><textarea id="${id}" class="mono" rows="14">${esc(JSON.stringify(H[key], null, 1))}</textarea></div>`;
+}
+function renderSlots() {
+  $("#v-slots").innerHTML = `<div class="card2"><h3>Slots <span class="muted small">what journeys collect about the customer (kept for the session)</span>
+      <span class="spacer"></span><button class="btn sm" onclick="addSlot()">+ slot</button></h3>
+    <table><tr><th>Name</th><th>Type</th><th>Description (the LLM reads this)</th><th>Validator</th><th>Options (enum)</th><th>PII</th><th></th></tr>` +
+    Object.entries(H.slots).map(([k, s]) => `<tr><td class="mono">${esc(k)}</td><td>${inp(s, "type", {options: ["string", "phone", "enum"], onchange: renderSlots})}</td>
+      <td>${inp(s, "description", {keepEmpty: true})}</td><td>${inp(s, "validator", {options: ["", ...Object.keys(H.validators)]})}</td>
+      <td>${s.type === "enum" ? inp(s, "values", {list: ","}) + meaningsBox(k) : ""}</td><td>${inp(s, "pii", {type: "checkbox", label: " "})}</td>
+      <td><button class="btn sm danger" onclick="delete H.slots['${esc(k)}'];markDirty();renderSlots()">×</button></td></tr>`).join("") + `</table></div>
+    <div class="grid2">${jsonBox("tools", "Tools", "Tool instances. <span class='mono'>impl</span> is a registered implementation id: built-ins <span class='mono'>records.append</span>, <span class='mono'>agents.available</span>, <span class='mono'>http.request</span> (allow_hosts, <span class='mono'>${env:NAME}</span> secrets), or one your code registers. Side-effect tools need an <span class='mono'>idempotency_key</span>.")}
+    <div>${jsonBox("contacts", "Contacts", "Usable in templates and tool arguments as {{contacts.sales.phones}} etc.")}
+    ${jsonBox("validators", "Validators", "normalize steps (unicode_digits, strip_non_digits, {'country_code': {'code': '1', 'trunk': ''}}) + a regex pattern.")}</div></div>`;
+}
+function meaningsBox(k) {  // enum option meanings, shown to the LLM extract so it picks the most specific option
+  const s = H.slots[k], vd = s.value_descriptions || {}, id = "vd_" + k;
+  setTimeout(() => { const e = document.getElementById(id); e && e.addEventListener("input", () => {
+    const o = {};
+    for (const line of e.value.split("\n")) { const i = line.indexOf(":"); if (i > 0 && line.slice(i + 1).trim()) o[line.slice(0, i).trim()] = line.slice(i + 1).trim(); }
+    if (Object.keys(o).length) s.value_descriptions = o; else delete s.value_descriptions;
+    markDirty(); }); });
+  return `<label class="f" for="${id}">Meanings (one per line: option: meaning)</label><textarea id="${id}" rows="4" class="small">${esc((s.values || []).map(v => `${v}: ${vd[v] || ""}`).join("\n"))}</textarea>`;
+}
+function addSlot() { const k = (prompt("Slot name:", "") || "").trim().replace(/[^A-Za-z0-9_]/g, "_"); if (!k || H.slots[k]) return; H.slots[k] = {type: "string", persist: "session", description: ""}; markDirty(); renderSlots(); }
+
+// ======================================================================== approved knowledge & conflicts
+let APP = null, buildTimer = null;
+async function renderApproved() {
+  const v = $("#v-approved"); v.innerHTML = `<p class="muted">Loading…</p>`;
+  try { APP = await api(API + "/knowledge/approved"); } catch (e) { v.textContent = e.message; return; }
+  const b = APP.build;
+  v.innerHTML = `<div class="grid2"><div class="card2"><h3>${esc(APP.file)} <span class="muted small">management-approved; outranks other sources</span></h3>
+      <p class="help">Markdown: <span class="mono">## Heading</span> starts a section (one per model, contact list, …). Saving does not change answers: click Rebuild to load it (≈ $0.01 when changed; supersede marks are recomputed, your reviews are kept).</p>
+      <textarea id="apptext" class="mono" rows="24">${esc(APP.text)}</textarea>
+      <div class="row" style="margin-top:6px"><button class="btn" onclick="saveApproved()">Save file</button>
+        <button class="btn primary" id="buildbtn" onclick="buildApproved()" ${b.running ? "disabled" : ""}>${b.running ? "Building…" : "Rebuild approved knowledge"}</button>
+        <span class="muted small">KB ${esc(APP.kb_version)} · ${APP.approved.length} approved sections</span></div>
+      ${b.error ? `<div class="errs">${esc(b.error)}</div>` : ""}${b.log ? `<details ${b.running ? "open" : ""}><summary>Last build log</summary><pre>${esc(b.log)}</pre></details>` : ""}
+    </div><div class="card2"><h3>Source lines replaced by approved information</h3>
+      <p class="help">Found automatically (decision model → LLM with evidence → decision model per line). Outdated lines are removed from the source text before the assistant sees it. Reject a wrong mark, or mark a line by hand.</p>
+      <table><tr><th>Source section · outdated line</th><th>Contradicted by (approved)</th><th></th></tr>${APP.marks.map(m => `<tr>
+        <td><span class="mono small">${esc(m.unit)}</span> ${esc(m.unit_title)}<div class="${m.rejected ? "" : "strike"}">${esc(m.line)}</div>
+          ${m.rejected ? '<span class="pill ok">kept (rejected mark)</span>' : '<span class="pill warn">removed</span>'} ${m.manual ? '<span class="pill">by admin</span>' : ""}</td>
+        <td><span class="mono small">${esc(m.by)}</span> ${esc(m.by_title)}<div class="muted small">${esc(m.evidence)}</div><div class="muted small"><i>${esc(m.why)}</i></div></td>
+        <td>${m.manual ? `<button class="btn sm" onclick="markLine('${esc(m.unit)}',${JSON.stringify(m.line).replace(/"/g, "&quot;")},'clear')">Remove mark</button>` :
+          m.rejected ? `<button class="btn sm" onclick="markLine('${esc(m.unit)}',${JSON.stringify(m.line).replace(/"/g, "&quot;")},'clear')">Undo</button>` :
+          `<button class="btn sm danger" onclick="markLine('${esc(m.unit)}',${JSON.stringify(m.line).replace(/"/g, "&quot;")},'reject')">Reject</button>`}</td></tr>`).join("")
+        || '<tr><td colspan="3" class="muted">No conflicts found.</td></tr>'}</table>
+      <h3 style="margin-top:14px">Mark a source line as outdated</h3>
+      <select id="mk-unit" onchange="loadLines(this.value)"><option value="">Source section…</option>${APP.sources.map(u => `<option value="${esc(u.id)}">${esc(u.id)} · ${esc(u.title)}</option>`).join("")}</select>
+      <select id="mk-line" style="margin-top:4px"></select>
+      <select id="mk-by" style="margin-top:4px"><option value="">Replaced by approved section…</option>${APP.approved.map(u => `<option value="${esc(u.id)}">${esc(u.id)} · ${esc(u.title)}</option>`).join("")}</select>
+      <button class="btn" style="margin-top:6px" onclick="addMark()">Mark outdated</button>
+    </div></div>`;
+  if (b.running) { clearTimeout(buildTimer); buildTimer = setTimeout(() => { if ($("#v-approved").classList.contains("on")) renderApproved(); }, 3000); }
+}
+async function saveApproved() { try { await api(API + "/knowledge/approved", {method: "PUT", body: {text: $("#apptext").value}}); toast("Saved. Click Rebuild to load it into the knowledge base."); } catch (e) { toast(e.message, true); } }
+async function buildApproved() {
+  if (!confirm("Rebuild the approved knowledge now? Paid LLM calls (≈ $0.01 if the file changed, ≈ $0 if not). The file is saved first.")) return;
+  try { await api(API + "/knowledge/approved", {method: "PUT", body: {text: $("#apptext").value}}); await api(API + "/knowledge/approved/build", {method: "POST"}); renderApproved(); }
+  catch (e) { toast(e.message, true); }
+}
+async function markLine(unit, line, action) { try { await api(API + "/knowledge/mark", {method: "POST", body: {unit, line, action}}); renderApproved(); } catch (e) { toast(e.message, true); } }
+async function loadLines(uid) {
+  const s = $("#mk-line"); s.innerHTML = ""; if (!uid) return;
+  const u = await api(API + "/knowledge/section/" + encodeURIComponent(uid));
+  s.innerHTML = u.lines.map(l => `<option value="${esc(l)}">${u.outdated.includes(l) ? "[removed] " : ""}${esc(l.slice(0, 140))}</option>`).join("");
+}
+async function addMark() {
+  const unit = $("#mk-unit").value, line = $("#mk-line").value, by = $("#mk-by").value;
+  if (!unit || !line || !by) return toast("Choose the section, the line and the approved section", true);
+  try { await api(API + "/knowledge/mark", {method: "POST", body: {unit, line, action: "add", by}}); renderApproved(); toast("Marked"); } catch (e) { toast(e.message, true); }
+}
+
+// ======================================================================== records
+async function renderRecords() {
+  const v = $("#v-records"); v.innerHTML = `<p class="muted">Loading…</p>`;
+  const recs = (await api(API + "/records")).records;
+  const by = {}; for (const r of recs) (by[r.type] = by[r.type] || []).push(r);
+  const types = Object.keys(by).length ? Object.keys(by) : ["lead", "handover"];
+  v.innerHTML = `<p class="help">Records written by tools (test sessions are excluded). Host systems receive them through the <span class="mono">record</span> event too.</p>` +
+    types.map(t => { const rows = by[t] || [], keys = [...new Set(rows.flatMap(r => Object.keys(r.data)))];
+      return `<div class="card2"><h3>${esc(t)}s (${rows.length}) <span class="spacer"></span><a class="btn sm" href="${API}/records.csv?type=${encodeURIComponent(t)}">CSV</a></h3>
+        ${rows.length ? `<div style="overflow:auto"><table><tr><th>When</th><th>Session</th>${keys.map(k => `<th>${esc(k)}</th>`).join("")}</tr>` +
+        rows.map(r => `<tr><td>${new Date(r.ts * 1000).toLocaleString()}</td><td class="mono">${esc(r.session.split(":").pop())}</td>${keys.map(k => `<td>${esc(r.data[k])}</td>`).join("")}</tr>`).join("") + `</table></div>` : '<p class="muted">None yet.</p>'}</div>`; }).join("");
+}
+
+// ======================================================================== test panel (runs the draft or the live config)
+let tSession = "test_" + Math.random().toString(36).slice(2, 8), tHarness = "draft", tChannel = "dm";
+function renderTest() {
+  $("#tside").innerHTML = `<div class="card2"><h3>Test settings</h3>
+    <label class="f">Configuration</label><select onchange="tHarness=this.value"><option value="draft" ${tHarness === "draft" ? "selected" : ""}>Draft (your edits; saved automatically before sending)</option><option value="published" ${tHarness === "published" ? "selected" : ""}>Published (live)</option></select>
+    <label class="f">Channel</label><select onchange="tChannel=this.value"><option value="dm">Inbox (DM)</option><option value="comment" ${tChannel === "comment" ? "selected" : ""}>Public comment</option></select>
+    <label class="f"><input type="checkbox" ${AGENTS ? "checked" : ""} onchange="setAgents(this.checked)"> Human agents online (live setting)</label>
+    <p class="row"><button class="btn" onclick="newTestSession()">New conversation</button><button class="btn" onclick="releaseTest()">Release handover</button></p>
+    <p class="help">Session <span class="mono">${tSession}</span>. Test sessions never reach the lead file. Each message costs about $0.001.</p></div>
+    <div class="card2" id="tstate"><h3>Session state</h3><p class="muted small">Send a message.</p></div>`;
+  $("#tq").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); testSend(); } };
+}
+async function setAgents(on) { await api(API + "/runtime/agents", {method: "POST", body: {online: on}}); AGENTS = on; }
+async function newTestSession() { tSession = "test_" + Math.random().toString(36).slice(2, 8); $("#tmsgs").innerHTML = ""; renderTest(); }
+async function releaseTest() { await api(API + "/sessions/" + encodeURIComponent(tSession) + "/release", {method: "POST"}); toast("Released: the bot answers again"); }
+async function testSend() {
+  const q = $("#tq").value.trim(); if (!q) return;
+  if (tHarness === "draft" && DIRTY && !(await saveDraft())) return;
+  $("#tq").value = "";
+  const box = $("#tmsgs");
+  box.insertAdjacentHTML("beforeend", `<div class="msg user"><div class="bubble">${esc(q)}</div></div><div class="msg" id="pending"><div class="bubble muted">…</div></div>`);
+  box.scrollTop = box.scrollHeight;
+  try {
+    const r = await api(API + "/chat", {method: "POST", body: {text: q, session: tSession, channel: tChannel, config: tHarness, is_test: true}});
+    $("#pending").remove();
+    const js = (r.harness || {}).journeys || [], pol = (r.harness || {}).policies || [];
+    js.forEach(o => lastPaths[o.journey] = o.path);
+    box.insertAdjacentHTML("beforeend", `<div class="msg"><div class="bubble">${esc(r.answer)}</div><div class="tmeta">
+      <span class="pill">${esc(r.status)}</span><span>$${(r.totals?.cost_usd || 0).toFixed(4)}</span><span>${Math.round((r.totals?.latency_ms || 0) / 100) / 10}s</span>
+      ${js.map(o => `<button class="btn sm" title="${esc(o.path.map(p => p.node + (p.port ? "." + p.port : "")).join(" → "))}" onclick="showOnCanvas('${esc(o.journey)}')">${esc(o.journey)}: ${esc(o.status)} ↗</button>`).join("")}
+      ${pol.map(p => `<span class="pill">policy ${esc(p)}</span>`).join("")}</div></div>`);
+    box.scrollTop = box.scrollHeight;
+    const st = r.state || {};
+    $("#tstate").innerHTML = `<h3>Session state</h3><table>${Object.entries(st.slots || {}).map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join("")}
+      ${Object.entries(st.flags || {}).map(([k, v]) => `<tr><th class="muted">${esc(k)}</th><td class="muted">${esc(JSON.stringify(v))}</td></tr>`).join("")}</table>
+      ${st.pending ? `<p class="small">Waiting for: <b>${esc((st.pending.require || []).join(", "))}</b> (${esc(st.pending.journey)})</p>` : ""}`;
+  } catch (e) { $("#pending")?.remove(); box.insertAdjacentHTML("beforeend", `<div class="errs">${esc(e.message)}</div>`); }
+}
+function showOnCanvas(jid) {
+  const j = H.journeys.find(x => x.id === jid); if (!j) return toast("That journey is not in the working copy", true);
+  curJ = j; selNode = null; showTab("journeys");
+}
+
+load().catch(e => { document.body.insertAdjacentHTML("afterbegin", `<div class="errs" style="margin:10px">${esc(e.message)}</div>`); });
+</script>
+</body>
+</html>
