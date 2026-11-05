@@ -1,6 +1,6 @@
 # Steward
 
-> A compliant customer-service harness for Python, powered by DADR (decision-guided retrieval). It answers from your knowledge base only, follows client rules and approved templates, runs journeys (lead capture, human handover) drawn as graphs of cards, and calls your tools by string id. It stores data in memory, SQLite, MongoDB, Firestore or your own adapter. Distribution `steward-harness`, import `steward`, Apache-2.0.
+> A compliant customer-service harness for Python, powered by DADR (dependency-aware decision retrieval). It answers from your knowledge base only, follows client rules and approved templates, runs journeys (lead capture, human handover) drawn as graphs of cards, and calls your tools by string id. It stores data in memory, SQLite, MongoDB, Firestore or your own adapter. Distribution `steward-harness`, import `steward`, Apache-2.0.
 
 Key facts:
 - The core is async. Use `Steward.handle()` in sync hosts and `await Steward.ahandle()` in async ones. Create one `Steward` per process.

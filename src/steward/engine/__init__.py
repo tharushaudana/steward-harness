@@ -1,4 +1,4 @@
-"""DADR: decision-guided retrieval over a knowledge tree, grounded generation, code-side checks and calculators."""
+"""DADR: dependency-aware decision retrieval over a knowledge tree, grounded generation, code-side checks and calculators."""
 
 from steward.engine.common import ENGINE_V, EngineSettings, Run
 from steward.engine.core import Engine, EngineResult, greeting_text, profile_block

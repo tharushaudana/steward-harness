@@ -1,4 +1,4 @@
-"""Decision-guided retrieval (DADR): navigate the knowledge tree with batches of bounded decisions.
+"""Dependency-aware decision retrieval (DADR): navigate the knowledge tree with batches of bounded decisions.
 
   shortlist   keyword search (top N sections)
   route       ONE decision call: topic relevance, shortlisted sections (two views + 'about'), calculators,

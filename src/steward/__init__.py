@@ -1,4 +1,4 @@
-"""Steward: a compliant customer-service harness, powered by DADR (decision-guided retrieval).
+"""Steward: a compliant customer-service harness, powered by DADR (dependency-aware decision retrieval).
 
 The public API is re-exported here. See README.md and AGENTS.md for the integration guide.
 """

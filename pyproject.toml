@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "steward-harness"
 version = "0.1.0"
-description = "Steward: a compliant customer-service harness, powered by DADR (decision-guided retrieval)."
+description = "Steward: a compliant customer-service harness, powered by DADR (dependency-aware decision retrieval)."
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
