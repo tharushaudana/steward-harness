@@ -6,6 +6,7 @@
 
   steward demo [--port 8765]        the fictional Northwind assistant + admin page (offline unless OPENROUTER_API_KEY)
   steward serve CONFIG --sqlite F   serve a configuration (OpenRouter from the environment) with the admin page
+  steward build DOCS.md... -o kb.json [--approved A.md]   build a knowledge base (paid model calls, cached)
 """
 
 from __future__ import annotations
@@ -79,7 +80,38 @@ def _load_env_file() -> None:
             os.environ.setdefault(k.strip(), v.strip())
 
 
-def _serve(bot: object, host: str, port: int, insecure_local: bool) -> int:
+def _cmd_build(args: argparse.Namespace) -> int:
+    import asyncio
+
+    from steward.build import SourceDocument, build, overlay_approved
+    from steward.knowledge import MemoryKnowledgeStore
+    from steward.providers import OpenRouter
+
+    _load_env_file()
+    docs = [SourceDocument.from_markdown(Path(f).read_text(encoding="utf-8"), doc_id=Path(f).stem, id_prefix=f"P{i + 1:02d}")
+            for i, f in enumerate(args.files)]
+    approved = [SourceDocument.from_markdown(Path(f).read_text(encoding="utf-8"), doc_id=Path(f).stem, kind="approved",
+                                             id_prefix=f"A{i + 1:02d}") for i, f in enumerate(args.approved or [])]
+    provider = OpenRouter.from_env(spend_cap_usd=args.budget)
+
+    async def run() -> object:
+        store = MemoryKnowledgeStore()
+        report = await build(docs, provider, writer=store, description=args.description, cache_dir=args.cache,
+                             budget_usd=args.budget)
+        if approved:
+            report = await overlay_approved(store, approved, provider, cache_dir=args.cache, budget_usd=args.budget)
+        return report
+
+    report = asyncio.run(run())
+    for n in report.notes:  # type: ignore[attr-defined]
+        print(n)
+    Path(args.output).write_text(json.dumps(report.snapshot.to_dict(), ensure_ascii=False, indent=1),  # type: ignore[attr-defined]
+                                 encoding="utf-8")
+    print(f"wrote {args.output} (cost ${report.cost_usd:.4f})")  # type: ignore[attr-defined]
+    return 0
+
+
+def _serve(bot: object, host: str, port: int, insecure_local: bool, knowledge_admin: object = None) -> int:
     try:
         import uvicorn
 
@@ -91,7 +123,8 @@ def _serve(bot: object, host: str, port: int, insecure_local: bool) -> int:
         print("refusing to serve the unauthenticated admin on a non-local address", file=sys.stderr)
         return 1
     print(f"admin page: http://{host}:{port}/steward/admin")
-    uvicorn.run(create_app(bot, insecure_local=insecure_local, prefix="/steward"), host=host, port=port)  # type: ignore[arg-type]
+    uvicorn.run(create_app(bot, insecure_local=insecure_local, prefix="/steward", knowledge_admin=knowledge_admin),  # type: ignore[arg-type]
+                host=host, port=port)
     return 0
 
 
@@ -131,8 +164,14 @@ def _cmd_serve(args: argparse.Namespace) -> int:
         snap = KnowledgeSnapshot.from_dict(json.loads(Path(args.knowledge).read_text(encoding="utf-8")))
         asyncio.run(stores.knowledge.write_snapshot(snap))
         print(f"loaded knowledge base {snap.meta.version} ({len(snap.sections)} sections) into {args.sqlite}")
-    bot = Steward(raw, provider=OpenRouter.from_env(spend_cap_usd=args.spend_cap), stores=stores)
-    return _serve(bot, args.host, args.port, insecure_local=args.insecure_local)
+    provider = OpenRouter.from_env(spend_cap_usd=args.spend_cap)
+    bot = Steward(raw, provider=provider, stores=stores)
+    admin = None
+    if args.approved_admin:
+        from steward.build import KnowledgeAdmin
+
+        admin = KnowledgeAdmin(bot, provider=provider, cache_dir=args.build_cache)
+    return _serve(bot, args.host, args.port, insecure_local=args.insecure_local, knowledge_admin=admin)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -162,7 +201,17 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--port", type=int, default=8765)
     p.add_argument("--spend-cap", type=float, default=5.0)
     p.add_argument("--insecure-local", action="store_true", help="admin without login (only on 127.0.0.1)")
+    p.add_argument("--approved-admin", action="store_true", help="enable the approved-knowledge tab (steward.build)")
+    p.add_argument("--build-cache", default=".steward-build-cache")
     p.set_defaults(fn=_cmd_serve)
+    p = sub.add_parser("build", help="build a knowledge base JSON from markdown documents (paid model calls, cached)")
+    p.add_argument("files", nargs="+", help="source markdown files")
+    p.add_argument("--approved", nargs="*", help="approved markdown files that outrank the sources")
+    p.add_argument("--description", default="", help="one line on what the documents are about")
+    p.add_argument("-o", "--output", default="kb.json")
+    p.add_argument("--cache", default=".steward-build-cache")
+    p.add_argument("--budget", type=float, default=0.25, help="max spend in USD for this run")
+    p.set_defaults(fn=_cmd_build)
     args = parser.parse_args(argv)
     if not getattr(args, "fn", None):
         parser.print_help()
