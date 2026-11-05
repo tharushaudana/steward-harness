@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 from collections import defaultdict
+from dataclasses import replace
 from typing import Any
 
 from steward.knowledge.model import Calculator, Entity, Hit, KnowledgeSnapshot, Section, TopicView, Value
@@ -57,7 +58,9 @@ class KnowledgeIndex:
             if sec:
                 self.doc_weight[sec.doc_id or sec.url or sec.id] += 1
         self.calcs: dict[str, Calculator] = {c.id: c for c in snapshot.calculators if c.validated}
-        self.entities: dict[str, Entity] = {e.id: e for e in snapshot.entities}
+        self.entities: dict[str, Entity] = self._with_approved_aliases(
+            {e.id: e for e in snapshot.entities}, [s for s in snapshot.sections if s.authority == "approved"])
+        self._approved_for: dict[str, list[str]] = {}
         calc_types = {c.entity_type for c in self.calcs.values()}
         self.calc_entities = sorted(e for e, x in self.entities.items() if x.type in calc_types)
         sample = " ".join(s.text[:400] for s in snapshot.sections[:60])
@@ -120,6 +123,50 @@ class KnowledgeIndex:
                     d[v.section_id] = d.get(v.section_id, 0) + 1
         d = self._ent_sections.get(entity, {})
         return sorted(d, key=lambda s: (self.sections[s].authority != "approved", -d[s], s))
+
+    @staticmethod
+    def _with_approved_aliases(entities: dict[str, Entity], approved: list[Section]) -> dict[str, Entity]:
+        """Approved text often names a model with its other name in brackets ("Trail 500 (Ridgeline)"): that name
+        becomes an alias, so a customer using it finds the entity. Pure code, no model call."""
+        text = "\n".join(s.title + "\n" + s.text for s in approved)
+        if not text:
+            return entities
+        out = dict(entities)
+        for eid, e in entities.items():
+            extra: list[str] = []
+            for name in (e.title, *e.aliases):
+                if len(name) < 3:
+                    continue
+                for m in re.finditer(rf"(?<!\w){re.escape(name)}\s*\(([^()\n]{{2,30}})\)", text, re.I):
+                    alias = m.group(1).strip()
+                    # a name, not a note: short, no digits-only, not a figure like "(petrol)" shared by many entities
+                    words = alias.split()
+                    if (1 <= len(words) <= 3 and alias[0].isupper() and not any(w.lower() in ("and", "or", "with") for w in words)
+                            and not any(ch.isdigit() for ch in alias)
+                            and alias.lower() not in {a.lower() for a in (e.title, *e.aliases, *extra)}):
+                        extra.append(alias)
+            if extra:
+                out[eid] = replace(e, aliases=(*e.aliases, *extra))
+        # an alias bracketed after several different entities is a shared attribute ("petrol", "HEV"), not a name
+        counts: dict[str, int] = defaultdict(int)
+        for eid, e in out.items():
+            for a in e.aliases[len(entities[eid].aliases):]:
+                counts[a.lower()] += 1
+        for eid, e in out.items():
+            base = len(entities[eid].aliases)
+            keep = tuple(a for a in e.aliases[base:] if counts[a.lower()] == 1)
+            if len(keep) != len(e.aliases) - base:
+                out[eid] = replace(e, aliases=(*entities[eid].aliases, *keep))
+        return out
+
+    def approved_sections_for(self, entity: str) -> list[str]:
+        """Approved sections about the entity (its values first, then sections naming it), best first."""
+        if entity not in self._approved_for:
+            with_values = [s for s in self.entity_sections(entity) if self.sections[s].authority == "approved"]
+            named = [s.id for s in self.sections.values()
+                     if s.authority == "approved" and s.id not in self.hidden and s.id not in with_values and self.covers(s.id, entity)]
+            self._approved_for[entity] = with_values + named
+        return self._approved_for[entity]
 
     def covers(self, section_id: str, entity: str) -> bool:
         """Does the section speak about the entity (its values, or its title/alias in the text)?"""

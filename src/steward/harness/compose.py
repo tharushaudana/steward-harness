@@ -7,7 +7,8 @@
             at most settings.max_asks per session, never after a refusal or when the contact is known)
 
 Template flags: requires_receipt (only sent if that tool succeeded this turn), covers (makes others redundant),
-counts_as_ask (counts as asking for a slot). Each template is sent at most once per reply.
+counts_as_ask (counts as asking for a slot), once_per_session (never repeated in a conversation). Each template is
+sent at most once per reply.
 """
 
 from __future__ import annotations
@@ -43,7 +44,12 @@ def compose(ctx: TurnContext, policy_templates: list[str], kb_text: str, status:
         if any(tid in (cfg.templates[u].covers if u in cfg.templates else []) for u in used):
             segments.append({"slot": "skipped", "source": f"template:{tid}", "why": "covered by another template"})
             return
+        if t.once_per_session and tid in flags.get("sent_once", []):
+            segments.append({"slot": "skipped", "source": f"template:{tid}", "why": "already sent in this conversation"})
+            return
         used.append(tid)
+        if t.once_per_session:
+            flags["sent_once"] = [*flags.get("sent_once", []), tid]
         txt = template_text(cfg, tid, lang, env)
         if txt and txt not in target:
             target.append(txt)
@@ -93,5 +99,8 @@ def compose(ctx: TurnContext, policy_templates: list[str], kb_text: str, status:
         text = g if isinstance(g, str) else (g.get(lang) or next(iter(g.values()), ""))
         segments.append({"slot": "body", "source": "fallback:greeting"})
     ctx.run.step("compose", "code", f"lang={lang} channel={ctx.msg.channel}", segments)
-    st = "handover" if flags.get("handover_active") else ("needs_input" if state.get("pending") else status)
+    # 'handover' only on the turn a journey made it (with after_handover='continue' the flag stays set while the
+    # conversation goes on)
+    handed = any(o.status == "handover" for o in ctx.outcomes)
+    st = "handover" if handed else ("needs_input" if state.get("pending") else status)
     return text, st

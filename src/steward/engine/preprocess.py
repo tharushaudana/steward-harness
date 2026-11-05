@@ -96,11 +96,33 @@ async def understand(run: Run, index: KnowledgeIndex, query: str, history: list[
                                               "Output only the translation. Keep names, model names and numbers exactly."},
                 {"role": "user", "content": q}], purpose="condense", max_tokens=200)
             search = t.text.strip().strip('"') or search
+        if translate and parts and any(needs_translation(index, p) for p in parts):
+            parts = await translate_parts(run, index, parts)
     kind = None
     if short:
         a = await run.decide("kind", {"latest_message": query, "standalone_version": search}, KIND_Q, purpose="route")
         kind = a["kind"].get("choice") if float(a["kind"].get("confidence", 0) or 0) >= 0.6 else "request"
     return Understood(q, search, kind, parts)
+
+
+PARTS_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["parts"],
+                "properties": {"parts": {"type": "array", "items": {"type": "string"}}}}
+
+
+async def translate_parts(run: Run, index: KnowledgeIndex, parts: list[str]) -> list[str]:
+    """Each part is searched and routed on its own, so each needs the knowledge base's language (the model often
+    translates "search" but leaves the parts in the customer's script). One call for all parts; on any problem the
+    original parts are kept."""
+    r = await run.chat("translate_parts", [
+        {"role": "system", "content": f'Translate each question into the language of this text: "{index.sample_text}". '
+                                      "Keep names, model names and numbers exactly; translate a product's local-script "
+                                      'name to its usual name. Return JSON {"parts": [...]} in the same order.'},
+        {"role": "user", "content": "\n".join(f"{i + 1}. {p}" for i, p in enumerate(parts))}],
+        purpose="condense", max_tokens=400, schema=PARTS_SCHEMA, schema_name="parts")
+    out = r.json.get("parts") if isinstance(r.json, dict) else None
+    if not isinstance(out, list) or len(out) != len(parts) or not all(isinstance(p, str) and p.strip() for p in out):
+        return parts
+    return [p.strip() for p in out]
 
 
 async def meta_answer(run: Run, profile_block: str, original: str, history: list[dict[str, str]] | None) -> str:

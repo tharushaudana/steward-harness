@@ -148,12 +148,15 @@ async def run_journey(ctx: TurnContext, j: Journey, outcome: Outcome, *, start: 
                 port = "ok" if res.ok else ("timeout" if res.error == "timeout" else "error")
                 info = {"ok": res.ok, "error": res.error, "duplicate": res.duplicate}
             elif isinstance(node, AskNode):
-                outcome.asks.append({"slots": list(node.require), "template": node.template})
+                have = env.get("slots") or {}
+                missing = sorted(s for s in node.require if have.get(s) in (None, ""))
+                template = node.templates_by_missing.get(",".join(missing)) or node.template
+                outcome.asks.append({"slots": list(node.require), "template": template})
                 outcome.status = "suspended"
                 outcome.pending = {"journey": j.id, "node": cur, "require": list(node.require), "asked_turn": None,
                                    "tries": 0}
                 outcome.path.append({"node": cur, "port": "suspend"})
-                ctx.run.step(f"j:{j.id}.{cur}", "state", node.template, {"ask": node.require}, t0)
+                ctx.run.step(f"j:{j.id}.{cur}", "state", template, {"ask": node.require, "missing": missing}, t0)
                 return outcome
             elif isinstance(node, SetNode):
                 for key, val in node.assign.items():

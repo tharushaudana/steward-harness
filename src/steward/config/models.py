@@ -56,6 +56,13 @@ class Settings(_Model):
     max_asks: int = Field(default=2, description="How often per session the flow may ask for the contact.")
     max_reasks: int = Field(default=2, description="A journey asking again after a reply more than this takes its gave_up port.")
     paused_template: str = Field(default="", description="Template sent while a session is handed over to a human.")
+    after_handover: Literal["pause", "continue"] = Field(default="pause", description=(
+        "After a handover: 'pause' answers only with paused_template until a human releases the session; 'continue' "
+        "keeps answering normally (the team has been told and joins when ready)."))
+    paused_contact_tool: str | None = Field(default=None, description=(
+        "While paused: a tool instance (e.g. save_lead) called when the customer shares a valid contact, so it is never lost."))
+    language_names: dict[str, str] = Field(default_factory=dict, description=(
+        "Display names of reply languages for the answer model, e.g. {'hi': 'Hindi (Devanagari script)'}; common codes are built in."))
     agents_default_online: bool = False
     tools_mode: Literal["live", "mock"] = "live"
     allow_hosts: list[str] = Field(default_factory=list, description="Hosts the built-in http.request tool may call.")
@@ -91,6 +98,8 @@ class Template(_Model):
     requires_receipt: str | None = Field(default=None, description="Only sent if this tool succeeded in the turn.")
     covers: list[str] = Field(default_factory=list, description="Templates made redundant when this one is sent.")
     counts_as_ask: str | None = Field(default=None, description="Sending this template counts as asking for this slot.")
+    once_per_session: bool = Field(default=False, description=(
+        "Send at most once per conversation (e.g. a policy's standard reply that should not repeat every turn)."))
 
     def is_approved(self, lang: str) -> bool:
         return self.approved if isinstance(self.approved, bool) else self.approved.get(lang, True)
@@ -119,6 +128,8 @@ class ClaimsRule(_Model):
 class Rules(_Model):
     voice: list[str] = Field(default_factory=list)
     no_emoji: bool = False
+    plain_text: bool = Field(default=False, description=(
+        "Plain text replies: no markdown (bold, italics, headings, tables) and no bullet symbols; enforced in code."))
     required_wording: list[RequiredWording] = Field(default_factory=list)
     forbidden_phrases: list[ForbiddenPhrase] = Field(default_factory=list)
     claims_without_receipt: ClaimsRule = Field(default_factory=ClaimsRule)
@@ -233,6 +244,9 @@ class AskNode(_Node):
     type: Literal["ask"] = "ask"
     require: list[str] = Field(default_factory=list)
     template: str | None = Field(default=None, description="Optional: empty when an Output card just asked.")
+    templates_by_missing: dict[str, str] = Field(default_factory=dict, description=(
+        "Ask only for what is missing: {'name': 'ask_name', 'phone': 'ask_phone', 'name,phone': 'ask_name_phone'} "
+        "(keys are the missing required slots, sorted, comma-separated); falls back to `template`."))
 
 
 class SetNode(_Node):

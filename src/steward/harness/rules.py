@@ -31,6 +31,9 @@ def rules_block(cfg: Config) -> str:
     lines = list(r.voice) + [w.instruction for w in r.required_wording if w.instruction]
     if r.forbidden_phrases:
         lines.append("Never use these words or phrases: " + ", ".join(f"'{f.phrase}'" for f in r.forbidden_phrases) + ".")
+    if r.plain_text:
+        lines.append("Plain text only: no markdown (no bold, italics, headings or tables) and no bullet symbols; "
+                     "use short lines and line breaks instead.")
     if cfg.prompts.answer_extra:
         lines.append(cfg.prompts.answer_extra)
     lines += CORE_RULES
@@ -106,3 +109,16 @@ def make_fixer(cfg: Config, index: KnowledgeIndex | None, lang: str) -> Fixer:
 
 def strip_emoji(text: str) -> str:
     return EMOJI_RE.sub("", text)
+
+
+_MD_EMPH = re.compile(r"(\*\*|__)(.+?)\1|(?<![\w*])\*(?!\s)([^*\n]+?)(?<!\s)\*(?![\w*])")
+_MD_LINE = re.compile(r"^[ \t]*(?:#{1,6}[ \t]+|[-*•][ \t]+|\d{1,2}[.)][ \t]+(?=\D))", re.M)
+
+
+def strip_markdown(text: str) -> str:
+    """rules.plain_text: remove emphasis markers, heading marks and list bullets; keep the words and line breaks.
+    Numbered list markers like "1. " are removed only before text (not "2.5 Lakh")."""
+    text = _MD_EMPH.sub(lambda m: m.group(2) or m.group(3) or "", text)
+    text = _MD_LINE.sub("", text)
+    text = re.sub(r"^[ \t]*\|?[ \t]*:?-{3,}.*$", "", text, flags=re.M)  # table separator rows
+    return re.sub(r"\n{3,}", "\n\n", text).strip()

@@ -13,6 +13,7 @@ _TEMPLATE_META = {"approved", "source", "requires_receipt", "covers", "counts_as
 _BUILTIN_IMPLS = {"builtin:store.append": "records.append", "builtin:agents.available": "agents.available",
                   "builtin:http": "http.request"}
 _NORMALIZE_STEPS = {"strip_non_digits": "strip_non_digits"}
+_RENAMED_FLAGS = {"state.phone_refused": "state.contact_refused"}
 
 
 def _v1_to_v2(c: dict[str, Any], notes: list[str]) -> dict[str, Any]:
@@ -61,6 +62,12 @@ def _v1_to_v2(c: dict[str, Any], notes: list[str]) -> dict[str, Any]:
     # journeys: jev -> decision, extract.from -> source
     for j in c.get("journeys") or []:
         for n in j.get("nodes", []):
+            for key in ("expr", "when"):  # flags the engine now sets under another name
+                if isinstance(n.get(key), str):
+                    for old, new in _RENAMED_FLAGS.items():
+                        if old in n[key]:
+                            n[key] = n[key].replace(old, new)
+                            notes.append(f"journey '{j.get('id')}': {old} -> {new} (set by the engine)")
             if "jev" in n:
                 n["decision"] = n.pop("jev")
             if n.get("type") == "extract" and "from" in n:

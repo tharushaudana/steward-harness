@@ -207,8 +207,9 @@ async def route(run: Run, index: KnowledgeIndex, q: str, *, original: str | None
                 about_p.update(about_scores(a3, extra_ids))
                 units = pick_sections(run, index, unit_p)
                 chosen += more
-    if not confident:  # about-fallback
-        about = [s for s, p in sorted(about_p.items(), key=lambda x: -x[1]) if p >= st.about and s not in units][: st.about_max]
+    if not confident:  # about-fallback: approved sections about the subject first, then the rest by score
+        about = [s for s, p in sorted(about_p.items(), key=lambda x: (index.sections[x[0]].authority != "approved", -x[1]))
+                 if p >= st.about and s not in units][: st.about_max]
         if about:
             run.step("about_fallback" + tag, "code", f"gate failed; sections about the subject (>= {st.about}) added",
                      {s: round(about_p[s], 2) for s in about})
@@ -224,12 +225,19 @@ async def route(run: Run, index: KnowledgeIndex, q: str, *, original: str | None
     added: list[str] = []  # entity coverage (an entity a selected calculator computes with is covered by the calculation)
     calc_covered = {e for c in calcs_sel for e in index.calcs[c].applies_to}
     for e in sorted(ents_sel, key=lambda x: -ent_p[x])[:4]:
-        if e not in calc_covered and not any(index.covers(s, e) for s in units + added):
+        if e in calc_covered:
+            continue
+        # approved knowledge about the entity always comes along, even when a source section already mentions it:
+        # the approved section is where the current figures are
+        approved = next((s for s in index.approved_sections_for(e) if s not in units + added), None)
+        if approved and not any(index.sections[s].authority == "approved" and index.covers(s, e) for s in units + added):
+            added.append(approved)
+        elif not any(index.covers(s, e) for s in units + added):
             best_s = next((s for s in index.entity_sections(e) if s not in units + added), None)
             if best_s:
                 added.append(best_s)
     if added:
-        run.step("coverage" + tag, "code", "entities in the question without evidence: their best sections added",
+        run.step("coverage" + tag, "code", "entities in the question without (approved) evidence: their best sections added",
                  {s: index.sections[s].title for s in added})
         units = units + added
         confident = False

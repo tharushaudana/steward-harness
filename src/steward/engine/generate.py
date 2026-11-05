@@ -29,7 +29,7 @@ Rules:
 - If ASK lines are present, end by asking those questions.
 - Cite section ids in square brackets like [S13] after the facts you use.
 - Sections marked APPROVED are the business's management-approved information: when they differ from other sections, follow APPROVED.
-- Reply in the language of the CUSTOMER'S OWN WORDS (or the QUESTION if not given), whatever language the SECTIONS are in.
+- Reply in the language given in REPLY LANGUAGE, whatever language the SECTIONS are in.
 - Be concise and friendly: 2-6 sentences or a short list."""
 
 Checker = Callable[[str], tuple[list[str], dict[str, Any]]]  # text -> (problems for the rewrite prompt, details)
@@ -42,6 +42,8 @@ class GenerateOptions:
     rules_block: str = ""  # client rules (harness)
     instructions: list[str] = field(default_factory=list)  # policy lines
     reply_like: str | None = None  # the text whose language the reply must use
+    reply_language: str | None = None  # a language decided by the caller (e.g. "English"): overrides reply_like
+    reply_latin: bool | None = None  # is that language written in Latin script (for the code check)
     extra_allowed_text: str = ""  # e.g. approved templates and contacts: numbers in them are fine
     checker: Checker | None = None
     fixer: Fixer | None = None
@@ -92,10 +94,17 @@ async def generate(run: Run, index: KnowledgeIndex, q: str, section_ids: list[st
                "\n".join(f"Customer: {h['q']}\nAssistant: {h['a'][:400]}" for h in history[-opts.history_turns:]) + "\n\n" + own)
     cust = (opts.reply_like or original or q).strip()
     policy = ("\n\nPOLICY (follow strictly):\n- " + "\n- ".join(opts.instructions)) if opts.instructions else ""
+    if opts.reply_language:  # decided by the caller (e.g. a romanised local language -> English by the client's rule)
+        lang_line = (f"REPLY LANGUAGE: write the whole reply in {opts.reply_language}, whatever language or script the "
+                     "customer and the SECTIONS use.")
+        want_latin = opts.reply_latin if opts.reply_latin is not None else script_ratio(cust) >= 0.5
+    else:
+        lang_line = f"REPLY LANGUAGE: write the whole reply in the same language as this customer message: «{cust}»"
+        want_latin = script_ratio(cust) >= 0.5
     user = (f"{own}QUESTION: {q}\n\nSECTIONS:\n{section_context(index, section_ids, run.settings.section_chars) or '(none)'}"
             + ("\n\nCALC:\n" + "\n".join(lines) if lines else "") + ("\n\nASK: " + " ".join(asks) if asks else "") + policy
             # last line on purpose (recency): sections may be in another language than the customer's message
-            + f"\n\nREPLY LANGUAGE: write the whole reply in the same language as this customer message: «{cust}»")
+            + "\n\n" + lang_line)
     msgs: list[Any] = [{"role": "system", "content": opts.profile_block + opts.rules_block + SYS_ANSWER},
                        {"role": "user", "content": user}]
     r = await run.chat("answer", msgs, purpose="answer", max_tokens=700)
@@ -106,11 +115,11 @@ async def generate(run: Run, index: KnowledgeIndex, q: str, section_ids: list[st
     def check(text: str) -> tuple[list[str], bool, list[str], dict[str, Any]]:
         prose = re.sub(r"https?://\S+|\[[^\]]*\]|\S+@\S+", " ", text)
         probs, det = opts.checker(text) if opts.checker else ([], {})
-        return number_check(text, allowed), abs(script_ratio(prose) - script_ratio(cust)) > 0.5, probs, det
+        return number_check(text, allowed), (script_ratio(prose) >= 0.5) != want_latin, probs, det
 
     t0 = time.perf_counter()
     bad, wrong_lang, probs, det = check(r.text)
-    run.step("answer_check", "code", f"{len(allowed)} allowed numbers; customer script={script_ratio(cust):.2f}",
+    run.step("answer_check", "code", f"{len(allowed)} allowed numbers; reply script latin={want_latin}",
              {"unsupported": bad, "wrong_language": wrong_lang, **({"client_rules": det} if det else {})}, t0)
     text = r.text
     if bad or wrong_lang or probs:
@@ -118,7 +127,8 @@ async def generate(run: Run, index: KnowledgeIndex, q: str, section_ids: list[st
         if bad:
             fix.append(f"These numbers are not in the SECTIONS/CALC: {bad}. Remove them.")
         if wrong_lang:
-            fix.append(f"Write the whole reply in the same language as the customer's message: «{cust}».")
+            fix.append(f"Write the whole reply in {opts.reply_language}." if opts.reply_language else
+                       f"Write the whole reply in the same language as the customer's message: «{cust}».")
         msgs += [{"role": "assistant", "content": r.text}, {"role": "user", "content": " ".join(fix) + " Rewrite the answer."}]
         r2 = await run.chat("answer_retry", msgs, purpose="answer", max_tokens=700)
         t0 = time.perf_counter()

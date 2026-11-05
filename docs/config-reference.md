@@ -61,6 +61,9 @@ Runtime behaviour.
 | `max_asks` | int | `2` | How often per session the flow may ask for the contact. |
 | `max_reasks` | int | `2` | A journey asking again after a reply more than this takes its gave_up port. |
 | `paused_template` | str | `""` | Template sent while a session is handed over to a human. |
+| `after_handover` | "pause" \| "continue" | `"pause"` | After a handover: 'pause' answers only with paused_template until a human releases the session; 'continue' keeps answering normally (the team has been told and joins when ready). |
+| `paused_contact_tool` | str \| null | `null` | While paused: a tool instance (e.g. save_lead) called when the customer shares a valid contact, so it is never lost. |
+| `language_names` | dict[str, str] | `{}` | Display names of reply languages for the answer model, e.g. {'hi': 'Hindi (Devanagari script)'}; common codes are built in. |
 | `agents_default_online` | bool | `false` |  |
 | `tools_mode` | "live" \| "mock" | `"live"` |  |
 | `allow_hosts` | list[str] | `[]` | Hosts the built-in http.request tool may call. |
@@ -102,6 +105,7 @@ Approved texts, one per language. `{{slots.name|prefix:', '}}` placeholders.
 | `requires_receipt` | str \| null | `null` | Only sent if this tool succeeded in the turn. |
 | `covers` | list[str] | `[]` | Templates made redundant when this one is sent. |
 | `counts_as_ask` | str \| null | `null` | Sending this template counts as asking for this slot. |
+| `once_per_session` | bool | `false` | Send at most once per conversation (e.g. a policy's standard reply that should not repeat every turn). |
 
 ## rules
 
@@ -111,6 +115,7 @@ Checks applied to every generated reply.
 |---|---|---|---|
 | `voice` | list[str] | `[]` |  |
 | `no_emoji` | bool | `false` |  |
+| `plain_text` | bool | `false` | Plain text replies: no markdown (bold, italics, headings, tables) and no bullet symbols; enforced in code. |
 | `required_wording` | list[RequiredWording] | `[]` |  |
 | `forbidden_phrases` | list[ForbiddenPhrase] | `[]` |  |
 | `claims_without_receipt` | ClaimsRule | object (see its section) |  |
@@ -321,6 +326,7 @@ Asks the customer and waits; the next message resumes the journey.
 | `type` | "ask" | `"ask"` |  |
 | `require` | list[str] | `[]` |  |
 | `template` | str \| null | `null` | Optional: empty when an Output card just asked. |
+| `templates_by_missing` | dict[str, str] | `{}` | Ask only for what is missing: {'name': 'ask_name', 'phone': 'ask_phone', 'name,phone': 'ask_name_phone'} (keys are the missing required slots, sorted, comma-separated); falls back to `template`. |
 
 ## card: set
 

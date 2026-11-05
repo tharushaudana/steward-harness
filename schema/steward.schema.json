@@ -75,6 +75,14 @@
      "default": null,
      "description": "Optional: empty when an Output card just asked.",
      "title": "Template"
+    },
+    "templates_by_missing": {
+     "additionalProperties": {
+      "type": "string"
+     },
+     "description": "Ask only for what is missing: {'name': 'ask_name', 'phone': 'ask_phone', 'name,phone': 'ask_name_phone'} (keys are the missing required slots, sorted, comma-separated); falls back to `template`.",
+     "title": "Templates By Missing",
+     "type": "object"
     }
    },
    "required": [
@@ -912,6 +920,12 @@
      "title": "No Emoji",
      "type": "boolean"
     },
+    "plain_text": {
+     "default": false,
+     "description": "Plain text replies: no markdown (bold, italics, headings, tables) and no bullet symbols; enforced in code.",
+     "title": "Plain Text",
+     "type": "boolean"
+    },
     "required_wording": {
      "items": {
       "$ref": "#/$defs/RequiredWording"
@@ -1022,6 +1036,37 @@
      "description": "Template sent while a session is handed over to a human.",
      "title": "Paused Template",
      "type": "string"
+    },
+    "after_handover": {
+     "default": "pause",
+     "description": "After a handover: 'pause' answers only with paused_template until a human releases the session; 'continue' keeps answering normally (the team has been told and joins when ready).",
+     "enum": [
+      "pause",
+      "continue"
+     ],
+     "title": "After Handover",
+     "type": "string"
+    },
+    "paused_contact_tool": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "description": "While paused: a tool instance (e.g. save_lead) called when the customer shares a valid contact, so it is never lost.",
+     "title": "Paused Contact Tool"
+    },
+    "language_names": {
+     "additionalProperties": {
+      "type": "string"
+     },
+     "description": "Display names of reply languages for the answer model, e.g. {'hi': 'Hindi (Devanagari script)'}; common codes are built in.",
+     "title": "Language Names",
+     "type": "object"
     },
     "agents_default_online": {
      "default": false,
@@ -1195,6 +1240,12 @@
      "default": null,
      "description": "Sending this template counts as asking for this slot.",
      "title": "Counts As Ask"
+    },
+    "once_per_session": {
+     "default": false,
+     "description": "Send at most once per conversation (e.g. a policy's standard reply that should not repeat every turn).",
+     "title": "Once Per Session",
+     "type": "boolean"
     }
    },
    "required": [

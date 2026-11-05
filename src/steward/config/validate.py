@@ -8,6 +8,7 @@ are well-formed graphs, and (when a tool registry is given) that every tool impl
 from __future__ import annotations
 
 import difflib
+import re
 from collections.abc import Collection
 
 from steward.config.catalog import card, node_ports
@@ -121,6 +122,11 @@ def validate(cfg: Config, *, tool_impls: Collection[str] | None = None, expr: Ex
                 check_template(n.template, np_ + ".template", **w)
             if isinstance(n, AskNode):
                 check_template(n.template, np_ + ".template", **w)
+                for key, tid in n.templates_by_missing.items():
+                    check_template(tid, f"{np_}.templates_by_missing.{key}", **w)
+                    if not set(key.split(",")) <= set(n.require):
+                        add(Issue(f"templates_by_missing key '{key}' names slots the card does not require",
+                                  f"{np_}.templates_by_missing", "bad_missing_key", severity="warning", **w))
                 if not any(e.from_ == f"{n.id}.resume" for e in j.edges):
                     add(Issue("an ask card needs a 'resume' arrow", np_, "ask_without_resume", **w))
                 for s in n.require:
@@ -210,7 +216,32 @@ def validate(cfg: Config, *, tool_impls: Collection[str] | None = None, expr: Ex
         if t not in tools:
             add(Issue(f"claims_without_receipt names unknown tool '{t}'", "rules.claims_without_receipt.receipt_tools",
                       "unknown_tool", hint=_close(t, tools)))
+    st = cfg.settings.paused_contact_tool
+    if st and st not in tools:
+        add(Issue(f"settings.paused_contact_tool names unknown tool '{st}'", "settings.paused_contact_tool", "unknown_tool",
+                  hint=_close(st, tools)))
+    # a state flag that conditions read but nothing ever sets is a dead branch (often a renamed flag)
+    written = set(ENGINE_FLAGS)
+    reads: list[tuple[str, str, str | None, str | None]] = []  # flag, path, journey, node
+    for j in cfg.journeys:
+        for n in j.nodes:
+            if isinstance(n, SetNode):
+                written |= {k.partition(".")[2] for k in n.assign if k.startswith("state.")}
+            for src in ([n.expr] if isinstance(n, ConditionNode) else []) + ([n.when] if isinstance(n, TriggerNode) and n.when else []):
+                reads += [(f, f"journeys.{j.id}.{n.id}", j.id, n.id) for f in re.findall(r"\bstate\.(\w+)", src)]
+    for p in cfg.policies:
+        if p.when:
+            reads += [(f, f"policies.{p.id}.when", None, None) for f in re.findall(r"\bstate\.(\w+)", p.when)]
+    for f, path, jid, nid in reads:
+        if f not in written:
+            add(Issue(f"state.{f} is read but never set (no Set card writes it and the engine does not set it)",
+                      path, "flag_never_set", severity="warning", hint=_close(f, written) or "set it with a Set card",
+                      journey=jid, node=nid))
     return issues
+
+
+# Flags the engine itself sets in session state (readable as state.x in expressions).
+ENGINE_FLAGS = ("welcomed", "contact_refused", "handover_active", "cannot_answer_turn", "sent_once")
 
 
 def errors_only(issues: list[Issue]) -> list[Issue]:

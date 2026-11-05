@@ -30,7 +30,7 @@ from steward.events import EventBus, Outbox, Trace
 from steward.harness.compose import compose
 from steward.harness.expr import ExprEngine
 from steward.harness.journeys import run_journey
-from steward.harness.rules import make_checker, make_fixer, rules_block, strip_emoji
+from steward.harness.rules import make_checker, make_fixer, rules_block, strip_emoji, strip_markdown
 from steward.harness.templates import all_template_text, template_text
 from steward.harness.triggers import Fired, fired, trigger_questions
 from steward.harness.turn import HISTORY_TURNS, Outcome, TurnContext, make_env, new_state
@@ -49,6 +49,21 @@ def reply_language(cfg: Config, msg: Message) -> str:
     if not sm:
         return langs[0]
     return sm.get("latin", langs[0]) if script_ratio(msg.text) >= 0.5 else sm.get("other", sm.get("latin", langs[0]))
+
+
+LANGUAGE_NAMES = {"en": "English", "bn": "Bengali (Bengali script)", "es": "Spanish", "fr": "French", "de": "German",
+                  "pt": "Portuguese", "it": "Italian", "nl": "Dutch", "id": "Indonesian", "ms": "Malay", "vi": "Vietnamese",
+                  "tr": "Turkish", "hi": "Hindi (Devanagari script)", "ur": "Urdu", "ar": "Arabic", "si": "Sinhala",
+                  "ta": "Tamil", "zh": "Chinese", "ja": "Japanese", "ko": "Korean", "ru": "Russian", "th": "Thai"}
+LATIN_LANGS = {"en", "es", "fr", "de", "pt", "it", "nl", "id", "ms", "vi", "tr"}
+
+
+def decided_language(cfg: Config, msg: Message, lang: str) -> tuple[str | None, bool | None]:
+    """(name, latin) when the configuration or the host decides the reply language; (None, None) = mirror the customer."""
+    if not (msg.lang or cfg.settings.script_lang):
+        return None, None
+    name = cfg.settings.language_names.get(lang) or LANGUAGE_NAMES.get(lang)
+    return (name, lang in LATIN_LANGS) if name else (None, None)
 
 
 def business_context(cfg: Config, index: KnowledgeIndex) -> str:
@@ -91,6 +106,8 @@ class Pipeline:
         async def finish(text: str, status: str) -> tuple[Reply, bool]:
             if cfg.rules.no_emoji:
                 text = strip_emoji(text)
+            if cfg.rules.plain_text:
+                text = strip_markdown(text)
             std = meta["standalone"] or msg.text
             state["history"] = [*history, {"q": std, "a": text}][-HISTORY_TURNS:]
             handover_now = bool(flags.get("handover_active")) and status == "handover"
@@ -120,8 +137,11 @@ class Pipeline:
 
         try:
             # ------------------------------------------------------------------ 2. gates (code only, $0)
-            if flags.get("handover_active"):
+            if flags.get("handover_active") and cfg.settings.after_handover == "pause":
                 text = template_text(cfg, cfg.settings.paused_template, lang, ctx.env) or "A member of our team will reply shortly."
+                if await self._paused_contact(ctx):  # a contact shared while paused is still recorded, and thanked for
+                    thanks = cfg.flow.thank_you.template if cfg.flow.thank_you else None
+                    text = template_text(cfg, thanks, lang, ctx.env) or text if thanks else text
                 run.step("paused", "code", "handover active: the assistant is paused until a human releases this session", text)
                 return await finish(text, "paused")
             channel = cfg.channels.get(msg.channel)
@@ -221,6 +241,22 @@ class Pipeline:
             return await finish(cfg.profile.escalation or "Sorry, something went wrong. Please try again.", "error")
 
     # --------------------------------------------------------------------------------------------------- helpers
+    async def _paused_contact(self, ctx: TurnContext) -> bool:
+        """While a session is paused, a valid contact in the message (captured by code, no model call) is stored and
+        handed to settings.paused_contact_tool, so a number shared after a handover is never lost."""
+        cfg = ctx.cfg
+        tool = cfg.settings.paused_contact_tool
+        contact = ctx.env["turn"].get("contact_in_message")
+        slot = cfg.settings.contact_slot
+        if not tool or not contact or ctx.state["slots"].get(slot) == contact:
+            return False
+        ctx.state["slots"][slot] = contact
+        res, receipt = await ctx.tools.call(cfg, tool, ctx.env, ctx.turn_info(), mode=ctx.tools_mode)
+        ctx.outbox.add("tool_call", {"session": ctx.msg.session, "tool": tool, "impl": receipt.impl, "ok": res.ok,
+                                     "error": res.error, "journey": None})
+        ctx.run.step("paused_contact", "tool", contact, {"tool": tool, "ok": res.ok})
+        return res.ok
+
     async def _resume(self, ctx: TurnContext, pend: dict[str, Any] | None, tri: dict[str, Any]) -> str | None:
         if not pend:
             return None
@@ -308,8 +344,10 @@ class Pipeline:
             else:
                 plan = await route(run, index, u.search, original=msg.text if u.kind is None else None, extra_qs=late_qs)
                 if plan.get("kind") in ("chitchat", "about_assistant", "about_conversation"):
-                    if plan["kind"] == "chitchat":
+                    if plan["kind"] == "chitchat" and not state["flags"].get("welcomed"):
                         return greeting_text(cfg.profile, ctx.lang), "chitchat"
+                    if plan["kind"] == "chitchat":  # mid-conversation small talk ("thanks, see you friday"): a contextual reply
+                        return await meta_answer(run, profile_block(cfg.profile), msg.text, state["history"]), "chitchat"
                     return await meta_answer(run, profile_block(cfg.profile), msg.text, state["history"]), "meta"
             if late_qs:
                 have = {f.id for f in run_js} | {resumed}
@@ -325,8 +363,10 @@ class Pipeline:
         units = plan.get("units", [])
         results = run_calcs(run, index, plan)[0] if plan.get("calcs") else []
         meta["units"], meta["results"] = units, results
+        lang_name, lang_latin = decided_language(cfg, msg, ctx.lang)
         opts = GenerateOptions(profile_block=profile_block(cfg.profile), rules_block=rules_block(cfg), instructions=instructions,
-                               reply_like=msg.text, extra_allowed_text=all_template_text(cfg),
+                               reply_like=msg.text, reply_language=lang_name, reply_latin=lang_latin,
+                               extra_allowed_text=all_template_text(cfg),
                                checker=make_checker(cfg, index, ctx.lang, []), fixer=make_fixer(cfg, index, ctx.lang))
         if units or results:
             for tid in policy_tpls:  # the composer appends these approved texts: the answer must not repeat them
