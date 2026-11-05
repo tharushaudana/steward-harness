@@ -183,6 +183,8 @@ async def run_scenario(factory: BotFactory, sc: Scenario, *, shared: ScenarioFil
         cfg = await bot.config()
         session = f"eval_{sc.id}"
         for i, t in enumerate(sc.turns):
+            for k, v in t.runtime.items():
+                await bot.stores.runtime.set(k, v)
             reply: Reply = await bot.ahandle(Message(session, t.user, channel=sc.channel, is_test=True, lang=t.lang))
             tot = reply.trace.totals
             tr = TurnResult(i, t.user, reply.text, reply.status,

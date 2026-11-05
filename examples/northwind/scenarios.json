@@ -25,6 +25,12 @@
     {"user": "hello?", "expect": {"status": "paused", "max_llm_calls": 0}}],
    "records": {"handover": 1}},
 
+  {"id": "agents_come_online", "tags": ["handover"],
+   "turns": [
+    {"user": "I want to talk to a person, I'm Ada 202 555 0147", "expect": {"journeys": {"human_request": "done"}}},
+    {"user": "can I talk to a person now?", "runtime": {"agents_online": true}, "expect": {"status": "handover"}}],
+   "records": {"lead": 1, "handover": 1}},
+
   {"id": "careers_policy", "tags": ["policy"],
    "turns": [{"user": "Are you hiring mechanics? Where do I send my CV?", "expect": {"policies": ["careers"], "no_journeys": ["lead_capture"]}}]},
 

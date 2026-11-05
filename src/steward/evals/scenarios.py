@@ -3,9 +3,9 @@
     {"setup": {"runtime": {"agents_online": false}},          # applied before every scenario (optional)
      "scenarios": [
        {"id": "lead_once", "tags": ["lead"], "channel": "dm",
-        "setup": {"runtime": {...}, "state": {...}},          # per scenario (optional)
+        "setup": {"runtime": {...}},                          # per scenario (optional)
         "turns": [
-          {"user": "I'm Ada, 202 555 0147",
+          {"user": "I'm Ada, 202 555 0147", "runtime": {},
            "expect": {"status": "answered", "contains": ["Thank you"], "not_contains": ["{{"],
                       "regex": ["\\\\d{10}"], "not_regex": [], "journeys": {"lead_capture": "done"},
                       "no_journeys": ["human_request"], "policies": ["workshop"], "no_policies": [],
@@ -53,6 +53,7 @@ class Turn(BaseModel):
     user: str
     expect: Expect = Field(default_factory=lambda: Expect())
     lang: str | None = None
+    runtime: dict[str, Any] = Field(default_factory=dict)  # RuntimeStore keys set before this turn (an admin action)
 
 
 class Setup(BaseModel):
