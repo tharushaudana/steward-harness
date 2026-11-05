@@ -40,7 +40,8 @@ async def extract(ctx: TurnContext, node: ExtractNode) -> tuple[str, dict[str, A
     for s in node.slots:
         d = cfg.slots.get(s)
         if d and d.type == "enum":
-            props[s] = {"type": ["string", "null"], "enum": [*d.values, None]}
+            # anyOf (not a ["string","null"] type with a null in the enum): accepted by every provider's strict mode
+            props[s] = {"anyOf": [{"type": "string", "enum": list(d.values)}, {"type": "null"}]}
             meanings = "\n".join(f"    * {v}: {d.value_descriptions.get(v, '')}".rstrip(": ") for v in d.values) \
                 if d.value_descriptions else ""
             lines.append(f"- {s}: {d.description or s}" + (" Options (choose the MOST SPECIFIC one that fits the whole "
