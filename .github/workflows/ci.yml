@@ -19,3 +19,18 @@ jobs:
       - run: uv run ruff check src tests
       - run: uv run pytest -q
       - run: uv run pyright
+
+  firestore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: uv sync --extra dev
+      - run: npx -y firebase-tools@13 emulators:exec --only firestore --project demo-steward "uv run pytest -q tests/test_firestore_stores.py"
