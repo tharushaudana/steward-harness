@@ -70,6 +70,7 @@ class ToolCall:
     idempotency_key: str | None = None  # rendered and (for test turns) namespaced by the runtime
     mode: Literal["live", "mock"] = "live"
     timeout_s: float = 10.0
+    settings: Mapping[str, Any] = field(default_factory=dict)  # the active config's settings (e.g. allow_hosts)
 
 
 @dataclass
