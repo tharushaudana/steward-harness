@@ -10,9 +10,9 @@ Steward turns a knowledge base plus an admin-editable configuration into a custo
 - **calls your tools** as callbacks identified by a string id: your CRM, ticketing system or staffing system.
 - **stores data where you want it:** memory, SQLite, MongoDB, Firestore, or your own adapter.
 
-> Status: **pre-alpha, under construction.** The architecture and milestones are in [docs/PLAN.md](docs/PLAN.md).
-> Milestone M0 (skeleton: types, errors, tracing, events, store protocols with in-memory stores, a scripted
-> provider, contract tests) is in place.
+> Status: **pre-alpha, under construction.** Architecture and milestones: [docs/PLAN.md](docs/PLAN.md).
+> Done: M0 (skeleton, stores, provider protocol) and M1 (typed configuration, JSON Schema, validation,
+> migration, `steward check`). Example config: [examples/northwind](examples/northwind/northwind.steward.json).
 
 ## Install (development)
 
