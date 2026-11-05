@@ -139,7 +139,7 @@ async def run_journey(ctx: TurnContext, j: Journey, outcome: Outcome, *, start: 
                 outcome.receipts.append(receipt)
                 ctx.outbox.add("tool_call", {"session": ctx.msg.session, "tool": node.tool, "impl": receipt.impl,
                                              "ok": res.ok, "error": res.error, "journey": j.id})
-                if receipt.impl == "records.append" and res.ok:
+                if receipt.impl == "records.append" and res.ok and ctx.tools_mode != "mock":  # a mock wrote nothing
                     ctx.outbox.add("record", {"session": ctx.msg.session, "tool": node.tool, "id": res.data.get("id"),
                                               "duplicate": res.duplicate, "args": dict(ctx.cfg.tools[node.tool].args)})
                 if node.save_as:
