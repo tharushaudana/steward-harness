@@ -88,3 +88,9 @@ async def test_memory_store_writer():
 
 def test_script_ratio():
     assert script_ratio("hello") == 1.0 and script_ratio("مرحبا") == 0.0 and script_ratio("123") == 1.0
+
+
+def test_packaged_demo_config_matches_example():
+    from steward.testing import northwind_config
+
+    assert northwind_config() == json.loads((ROOT / "examples" / "northwind" / "northwind.steward.json").read_text(encoding="utf-8"))
