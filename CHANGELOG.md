@@ -19,6 +19,7 @@ Known limitations:
   - Northwind scenarios (`examples/northwind/scenarios.json`) pass offline.
   - docs: README, AGENTS.md (integration checklist), `llms.txt`, concepts, tools, stores, providers, server, evals, build, and a generated config reference (`steward schema --markdown`, kept in sync by a test).
   - examples (`minimal.py`, `fastapi_app.py`, `django_view.py`, `custom_knowledge_store.py`), tested where they can run offline.
+  - README figures (`assets/`), rendered with Remotion from `figures/`, each in light and dark: the logo, the architecture of one turn, a four-step DADR explainer (route, select, dependencies, compute and verify), and the knowledge graph (still and animated) with answers striking to their sections. README section "How DADR works"; DADR is now consistently expanded as dependency-aware decision retrieval.
   - **mock mode:** the built-in tools have mock results; a config instance's `mock` outranks the implementation's; read-only tools run for real; a mocked `records.append` emits no `record` event.
 - **M7 knowledge build** (`steward.build`, optional):
   - markdown documents become section-sized units;

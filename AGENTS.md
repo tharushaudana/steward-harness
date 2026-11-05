@@ -73,6 +73,7 @@ assert reply.journeys[0]["journey"] == "lead_capture" and "Thank you, Ada" in re
   - `uv run steward schema -o schema/steward.schema.json`
   - `uv run steward schema --markdown -o docs/config-reference.md`
   - `examples/northwind/northwind.steward.json` must equal `src/steward/testing/northwind.steward.json`.
+- **README figures** (`assets/`) are rendered from React sources in `figures/` with Remotion: `cd figures && npm ci && node render.mjs [LogoBanner|Architecture|Dadr|KnowledgeRadial|KnowledgeStrikes|LogoIcon]`. The knowledge graph uses a fictional knowledge base (`figures/src/data/northwindKb.ts`); keep it fictional. If the pipeline or the engine changes, update `figures/src/Architecture.tsx` and `figures/src/Dadr.tsx` too.
 
 Run before every commit:
 
