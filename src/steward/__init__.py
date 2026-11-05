@@ -19,7 +19,7 @@ from steward.errors import (
 from steward.events import EventBus, Step, Trace
 from steward.types import Message, Receipt, Reply, Status, ToolCall, ToolResult, TurnInfo, fail, ok
 
-__version__ = "0.1.0.dev0"
+__version__ = "0.1.0"
 
 __all__ = [
     "BudgetExceeded", "ConfigError", "EventBus", "Issue", "Message", "ProviderError", "Receipt", "Reply",

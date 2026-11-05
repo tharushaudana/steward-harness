@@ -1,6 +1,50 @@
 # Changelog
 
-## 0.1.0.dev0 (unreleased)
+## 0.1.0 (2026-11-05)
+
+The first release. Everything below is new in 0.1.0.
+
+Known limitations:
+- The rewrite step can split a very short follow-up ("try again") into parts. Journeys still behave, but the knowledge path does unnecessary work.
+- The MongoDB adapter is tested against mongomock in CI. Set `STEWARD_TEST_MONGO_URI` to run the suite against a real server.
+- A configuration migrated from the prototype format cannot know the phone country code. Set the validator's `country_code` step after migrating.
+- `EmulatedDecider` thresholds are not calibrated per model. Use `steward eval --calibrate`.
+
+- **M8 evals and docs:**
+  - `steward.evals`: multi-turn scenario files (JSON or YAML) with expectations per turn on status, text, regexes, journeys, policies, tools, slots, the pending ask and the turn budget. A turn can set runtime switches, and a scenario can check record counts at the end.
+  - invariants checked on every reply: not empty, no unrendered placeholder, no emoji when they are off, no error status, no repeated sentence.
+  - the runner gives each scenario a fresh bot, sends `is_test` messages, can use mock tools, saves `results.json` and `report.md`, and can resume a run.
+  - `calibrate` suggests trigger thresholds from labelled turns.
+  - CLI: `steward eval` (`--offline | --record | --replay`, `--mock-tools`, `--only`, `--tags`, `--calibrate`).
+  - Northwind scenarios (`examples/northwind/scenarios.json`) pass offline.
+  - docs: README, AGENTS.md (integration checklist), `llms.txt`, concepts, tools, stores, providers, server, evals, build, and a generated config reference (`steward schema --markdown`, kept in sync by a test).
+  - examples (`minimal.py`, `fastapi_app.py`, `django_view.py`, `custom_knowledge_store.py`), tested where they can run offline.
+  - **mock mode:** the built-in tools have mock results; a config instance's `mock` outranks the implementation's; read-only tools run for real; a mocked `records.append` emits no `record` event.
+- **M7 knowledge build** (`steward.build`, optional):
+  - markdown documents become section-sized units;
+  - passes S (schema), U (units and verified values), B (topic tree and assignment) and D (calculators validated in code);
+  - every model call is cached under a hash of its inputs, and a per-run budget limits spend;
+  - `overlay_approved` ranks approved information first and runs the three-step supersede review (decision, evidence verified verbatim, per-line decision);
+  - admin overrides survive re-runs (`set_override`);
+  - `KnowledgeAdmin` adds the approved-knowledge endpoints for the admin page;
+  - CLI: `steward build`, and `steward serve --approved-admin`.
+- **M6 admin server** (`steward[server]`):
+  - a FastAPI router with viewer, editor and publisher roles;
+  - endpoints for config draft, validate, publish, discard, history and restore, plus catalog, prompt preview, test chat, sessions, the agents switch, and records with CSV export;
+  - the admin page, ported to be domain-free, with the Drawflow canvas vendored;
+  - `steward demo` (offline Northwind) and `steward serve`.
+- **M5 storage adapters:**
+  - SQLite (one file, WAL, FTS5 knowledge search);
+  - MongoDB (PyMongo async, conditional updates, unique key index, generation-switched knowledge);
+  - Firestore (precondition writes for compare-and-set, hashed record ids, merge transactions);
+  - all of them pass the contract suites (MongoDB via mongomock or a real server, Firestore against the emulator in CI).
+- **M4 harness runtime:**
+  - the `Steward` facade (async core, sync bridge on a private loop, `check()`, events, `sessions`, `admin` draft and publish);
+  - the turn pipeline: gates, triage in parallel with understand, resume with a cap on re-asks, journeys and late triggers, the knowledge path, compose, rules check and fix, compare-and-set commit with retry, then the event outbox;
+  - journeys with all built-in cards;
+  - a tool registry with timeouts, mock mode, receipts and `test:` idempotency keys;
+  - built-in tools `records.append`, `agents.available` and `http.request`;
+  - claims-without-receipt protection.
 
 - **M3 knowledge and engine:**
   - **knowledge model:** typed and storage-independent (`steward.knowledge`): `KnowledgeSnapshot`, sections with authority and supersede marks, values, entities, calculators.
