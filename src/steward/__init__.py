@@ -3,6 +3,7 @@
 The public API is re-exported here. See README.md and AGENTS.md for the integration guide.
 """
 
+from steward.app import Steward
 from steward.errors import (
     BudgetExceeded,
     ConfigError,
@@ -22,6 +23,6 @@ __version__ = "0.1.0.dev0"
 
 __all__ = [
     "BudgetExceeded", "ConfigError", "EventBus", "Issue", "Message", "ProviderError", "Receipt", "Reply",
-    "RevisionConflict", "StateConflict", "Status", "Step", "StewardError", "StoreError", "ToolCall", "ToolError",
+    "RevisionConflict", "StateConflict", "Status", "Step", "Steward", "StewardError", "StoreError", "ToolCall", "ToolError",
     "ToolResult", "Trace", "TurnInfo", "UnknownTool", "__version__", "fail", "ok",
 ]
